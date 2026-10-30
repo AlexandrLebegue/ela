@@ -11,6 +11,7 @@ import '../../data/models/book.dart';
 import '../../data/models/library_entry.dart';
 import '../../data/models/review.dart';
 import '../../providers.dart';
+import '../library/fly_to_library.dart';
 
 /// Fiche livre (étape 3) : en-tête + 3 onglets en fondu doux —
 /// Synthèse IA & Presse / Le Web / La Communauté — + PAL / Acheter.
@@ -27,6 +28,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   _DetailTab _tab = _DetailTab.aiPress;
   bool _addingToPal = false;
   bool _purchased = false;
+  final GlobalKey _coverKey = GlobalKey();
 
   @override
   void initState() {
@@ -35,7 +37,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     ref.read(libraryServiceProvider).addHistory(widget.isbn);
   }
 
-  Future<void> _togglePal({required bool inPal}) async {
+  Future<void> _togglePal({required Book book, required bool inPal}) async {
     final lib = ref.read(libraryServiceProvider);
     if (inPal) {
       await lib.removeEntry(widget.isbn, LibrarySection.toRead);
@@ -49,6 +51,9 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     }
     if (_addingToPal) return;
     setState(() => _addingToPal = true);
+    // On capture la position de la couverture avant le vol.
+    final from = _coverRect();
+    final target = _libraryTargetRect();
     await lib.addToRead(widget.isbn);
     if (!mounted) return;
     setState(() => _addingToPal = false);
@@ -56,6 +61,24 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Ajouté à votre Pile à Lire.')),
     );
+    // La couverture « lévite » vers l'icône Bibliothèque de la barre.
+    if (from != null) {
+      FlyToLibrary.fly(context, book: book, from: from, to: target);
+    }
+  }
+
+  Rect? _coverRect() {
+    final box = _coverKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    final o = box.localToGlobal(Offset.zero);
+    return Rect.fromLTWH(o.dx, o.dy, box.size.width, box.size.height);
+  }
+
+  /// Position approx. de l'icône Bibliothèque dans la barre (3e bouton/4).
+  Rect _libraryTargetRect() {
+    final size = MediaQuery.of(context).size;
+    final center = Offset(size.width * 0.625, size.height - 44);
+    return Rect.fromCenter(center: center, width: 34, height: 48);
   }
 
   Future<void> _purchase(Book book) async {
@@ -131,8 +154,9 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
               inPal: inPal,
               busy: _addingToPal,
               purchased: _purchased,
-              onTogglePal: () => _togglePal(inPal: inPal),
-              onPurchase: () => _purchase(book),
+            onTogglePal: () => _togglePal(book: book, inPal: inPal),
+            onPurchase: () => _purchase(book),
+            coverKey: _coverKey,
             ),
             _TabBar(
               current: _tab,
@@ -174,6 +198,7 @@ class _DetailHeader extends StatelessWidget {
     required this.purchased,
     required this.onTogglePal,
     required this.onPurchase,
+    this.coverKey,
   });
 
   final Book book;
@@ -182,6 +207,7 @@ class _DetailHeader extends StatelessWidget {
   final bool purchased;
   final VoidCallback onTogglePal;
   final VoidCallback onPurchase;
+  final GlobalKey? coverKey;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +220,7 @@ class _DetailHeader extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BookCover(book: book, width: 110),
+              BookCover(key: coverKey, book: book, width: 110),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

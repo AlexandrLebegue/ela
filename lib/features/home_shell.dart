@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/haptics.dart';
 import '../core/theme.dart';
+import 'library/fly_to_library.dart';
 
 /// Coquille principale : 4 entrées (Tendance / Scanner / Bibliothèque /
 /// Recherche), le Scanner au centre, mis en avant comme une boutonnière.
@@ -34,6 +35,7 @@ class _ElaBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final receiving = ref.watch(flyToLibraryProvider).receiving;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
@@ -69,6 +71,7 @@ class _ElaBottomBar extends ConsumerWidget {
               label: 'Bibliothèque',
               icon: Icons.auto_stories,
               active: activeIndex == 2,
+              receiving: receiving,
               onTap: () => onNavigate(2),
             ),
             _TabButton(
@@ -89,12 +92,16 @@ class _TabButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.active,
+    this.receiving = false,
     required this.onTap,
   });
 
   final String label;
   final IconData icon;
   final bool active;
+  /// « Réception » d'un vol : le bouton s'élargit brièvement pour
+  /// accueillir la couverture.
+  final bool receiving;
   final VoidCallback onTap;
 
   @override
@@ -108,23 +115,40 @@ class _TabButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 24, color: color),
-              const SizedBox(height: 3),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 250),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: color,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: receiving ? 16 : 8,
+            vertical: receiving ? 6 : 2,
+          ),
+          decoration: BoxDecoration(
+            color: receiving
+                ? (active ? scheme.primaryContainer : scheme.secondaryContainer)
+                    .withValues(alpha: 0.55)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutBack,
+            scale: receiving ? 1.12 : 1.0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 24, color: color),
+                const SizedBox(height: 3),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 250),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: color,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  child: Text(label),
                 ),
-                child: Text(label),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

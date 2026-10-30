@@ -8,27 +8,31 @@ import '../../data/models/book.dart';
 import '../../data/models/library_entry.dart';
 import '../../providers.dart';
 
-/// Écran « Ma Bibliothèque » : Historique (passif) + Pile à Lire (active).
-/// Persistance locale, sans compte.
+/// Écran « Ma Bibliothèque » : Historique (passif, chronologique) +
+/// Pile à Lire (active). Persistance locale, sans compte.
 class LibraryScreen extends ConsumerWidget {
   const LibraryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final entries = ref.watch(libraryEntriesProvider).value ??
+        const <LibraryEntry>[];
+    // Chronologique : du plus récent au plus ancien, par section.
+    final history = entries
+        .where((e) => e.section == LibrarySection.history)
+        .toList()
+      ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    final toRead = entries
+        .where((e) => e.section == LibrarySection.toRead)
+        .toList()
+      ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    final isEmpty = history.isEmpty && toRead.isEmpty;
+
     return Scaffold(
       backgroundColor: scheme.surface,
-      body: StreamBuilder<List<LibraryEntry>>(
-        stream: ref.read(libraryServiceProvider).watchEntries(),
-        builder: (context, snapshot) {
-          final entries = snapshot.data ?? const <LibraryEntry>[];
-          final history = entries
-              .where((e) => e.section == LibrarySection.history)
-              .toList();
-          final toRead = entries
-              .where((e) => e.section == LibrarySection.toRead)
-              .toList();
-          final isEmpty = history.isEmpty && toRead.isEmpty;
+      body: Builder(
+        builder: (context) {
           return Column(
             children: [
               Padding(
@@ -65,7 +69,9 @@ class LibraryScreen extends ConsumerWidget {
                             _SectionTitle(
                               icon: Icons.history,
                               label: 'Historique',
-                              hint: 'Ce que vous avez scanné ou consulté',
+                              hint: 'Passif — chronologique, du plus récent',
+                              tag: 'Passif',
+                              count: history.length,
                             ),
                             for (final e in history)
                               _LibraryRow(
@@ -81,6 +87,8 @@ class LibraryScreen extends ConsumerWidget {
                               icon: Icons.bookmark,
                               label: 'Pile à Lire',
                               hint: 'Vos livres en attente, du plus récent',
+                              tag: 'Active',
+                              count: toRead.length,
                             ),
                             for (final e in toRead)
                               _LibraryRow(
@@ -106,11 +114,15 @@ class _SectionTitle extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.hint,
+    this.tag,
+    this.count,
   });
 
   final IconData icon;
   final String label;
   final String hint;
+  final String? tag;
+  final int? count;
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +141,30 @@ class _SectionTitle extends StatelessWidget {
               color: scheme.onSurface,
             ),
           ),
+          if (tag != null) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: tag == 'Active'
+                    ? scheme.primaryContainer
+                    : scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                tag!,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: tag == 'Active'
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurfaceVariant,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -140,6 +176,15 @@ class _SectionTitle extends StatelessWidget {
               ),
             ),
           ),
+          if (count != null)
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
         ],
       ),
     );

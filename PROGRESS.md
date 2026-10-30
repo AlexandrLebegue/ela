@@ -39,11 +39,17 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - Providers Riverpod : `bookByIsbnProvider`, `curationProvider` (family, cache par ISBN), `communityReviewsProvider`, `libraryEntriesProvider`.
   - Tests : `test/book_detail_test.dart` (5 tests, viewport téléphone 390×844@3x — le viewport 800×600 par défaut est trop court pour cette fiche) ; 10 tests au total, tous verts.
 
+- **Étape 4 — Ma Bibliothèque**
+  - **Vol de couverture** (`lib/features/library/fly_to_library.dart`) : à l’ajout PAL depuis la fiche, une `OverlayEntry` (navigateur racine, 780 ms, `easeInCubic`) fait glisser une couverture « allégée » (dégradé + initiale + halo doré pulsé, zéro réseau) en arc par-dessus l’UI, du rect de la couverture vers l’icône Bibliothèque ; à l’atterrissage la barre « reçoit » (`FlyToLibraryController.receiving` 520 ms) : l’icône s’élargit + scale 1.12 + fond doré, puis s’efface. `ChangeNotifierProvider` depuis `flutter_riverpod/legacy.dart` (riverpod 3).
+  - Positionnement par `Transform.translate` + `Align` : **`Positioned` est interdit dans le sous-arbre d’un `OverlayEntry`** en 3.35 (ParentDataWidget levé) ; suppression via `entry.remove()` ; pas de `lerp` top-level (locale `_lerp`).
+  - `library_screen.dart` : lecture via `libraryEntriesProvider` (pas de `StreamBuilder`), Historique (tag **Passif**) et PAL (tag **Active**) triés **chronologiquement** (le plus récent d’abord), compteurs par section, état vide « Votre bibliothèque est vide » + CTA scanner.
+  - **Bug produit corrigé** : `FakeLibraryService.watchEntries()` émettait l’état initial au `StreamController.broadcast` **avant** l’abonnement du `StreamProvider` → événement perdu → bibliothèque vide jusqu’à la 1ʳᵉ modification. Désormais chaque abonnement reçoit d’abord un instantané (`Stream.multi`).
+  - Tests : `test/library_test.dart` (2 tests : sections/tags/tri chronologique déterministe via prefs pré-chargées avec horodatages explicites ; vol + réception de la barre + entrée PAL persistée). 12 tests au total, tous verts, build APK debug OK.
+
 ## En cours
-- (rien — étape 3 terminée, en attente d'étape 4)
+- (rien — étape 4 terminée, en attente d'étape 5)
 
 ## Reste
-- Étape 4 — Ma Bibliothèque : animation d’ajout PAL (couverture glisse vers l’icône de la barre qui s’élargit).
 - Étape 5 — Tendance & Recherche : animations des résultats.
 - Étape 6 — Comptes : lazy registration (e-mail/Google/Apple stubs), profil, déconnexion.
 - Étape 7 — Freemium : gating 1 avis presse + 2 web (flouté au-delà), 3 jetons IA/mois, Premium 2 €/mois, Radar à économies, MatchMaker, paywall.
@@ -55,5 +61,6 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
 - **Fiche livre défilable d’un bloc** (en-tête + onglets + contenu dans un seul `SingleChildScrollView`) : la variante « en-tête + barre d’onglets fixes » déborde dès que la description est longue (vérifié au layout).
 - **Couvertures** : URL OpenLibrary `covers.openlibrary.org/b/id/<id>-M.jpg` (ISBN vérifiés via l’API) ; repli visuel élégant (dégradé sépia + initiale) si hors-ligne.
 - **Jetifier OFF** (voir Fait) : exigence RAM du conteneur.
+- **Flutter 3.35 — overlay** : `Positioned` ne peut pas appliquer sa `StackParentData` dans le sous-arbre d’un `OverlayEntry` (erreur levée au layout) → positionner avec `Transform.translate` (+ `Align`) ; `OverlayEntry.remove()` est la méthode de suppression ; pas de fonction `lerp` globale (écrire la sienne).
 - **Google Books** : branché à l’étape 2 — `GoogleBooksClient.fetchByIsbn` (API publique sans clé, timeout 4–5 s, toute erreur → null) ; le catalogue local répond d’abord pour garder curation/avis cohérents.
 - **Tests** : `GoogleFonts.config.allowRuntimeFetching = false` + horloge factice avancée à la main (les délais fake sont des `Future.delayed`) ; jamais de réseau ni de caméra en test (garde `isRunningUnderFlutterTest` = variable d’env `FLUTTER_TEST`, **pas** un `--dart-define`).

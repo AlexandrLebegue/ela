@@ -11,7 +11,6 @@ import 'fake_delay.dart';
 class FakeLibraryService implements LibraryService {
   FakeLibraryService(this._prefs) {
     _entries = _load();
-    _controller.add(_entries);
   }
 
   final SharedPreferences _prefs;
@@ -22,7 +21,12 @@ class FakeLibraryService implements LibraryService {
       StreamController<List<LibraryEntry>>.broadcast();
 
   @override
-  Stream<List<LibraryEntry>> watchEntries() => _controller.stream;
+  Stream<List<LibraryEntry>> watchEntries() => Stream.multi((controller) {
+        // Instantané initial : un abonnement tardif ne rate pas l'état.
+        controller.add(List.unmodifiable(_entries));
+        final sub = _controller.stream.listen(controller.add);
+        controller.onCancel = sub.cancel;
+      });
 
   List<LibraryEntry> _load() {
     final raw = _prefs.getString(_key);
