@@ -29,11 +29,20 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - Détection test vs prod : `lib/core/flags.dart` → `isRunningUnderFlutterTest` = `Platform.environment['FLUTTER_TEST'] == 'true'` (`flutter test` définit une **variable d'env**, pas un `--dart-define` : `bool.fromEnvironment` ne la voit pas — vérifié empiriquement).
   - Tests : `test/scanner_test.dart` (3 tests : dégradation sans caméra, ISBN connu → fiche, ISBN inconnu → avertissement) ; app_test adapté. 5 tests au total, tous verts.
 
+- **Étape 3 — Fiche livre**
+  - En-tête : couverture, titre (Lora), auteur, éditeur/année, badge popularity, « X lecteurs d’Ela », description, prix, boutons **Ajouter à la PAL** (toggle, haptique) et **Acheter** (lien affilié fictif via `PaymentService`).
+  - 3 onglets en fondu doux (`AnimatedSwitcher` 420 ms, soulignement doré animé) : **Synthèse IA & Presse** (carte « Synthèse Ela » + compteur « ✦ N jetons IA ce mois-ci » + 5 avis presse curés), **Le Web** (15 avis), **La Communauté** (avis illimités, ajout d’avis, bouton Signaler).
+  - Pendant la curation simulée (délais fake 0,9–1,6 s) : **texte qui respire + squelettes « encre »**, jamais de spinner.
+  - Avis : carte avec auteur/outlet/date, titre serif, texte rogné « Lire la suite » (AnimatedSize), likes ; Signaler → `ReviewService.reportReview` + snack.
+  - Ajout d’avis : bottom sheet ; **lazy registration** — profil anonyme → invite « Votre avis mérite un nom » + bouton « Créer mon compte » (navigation branchée à l’étape 6).
+  - Ouvrir une fiche = ajout à l’Historique (`LibraryService.addHistory`) pour l’étape 4.
+  - Providers Riverpod : `bookByIsbnProvider`, `curationProvider` (family, cache par ISBN), `communityReviewsProvider`, `libraryEntriesProvider`.
+  - Tests : `test/book_detail_test.dart` (5 tests, viewport téléphone 390×844@3x — le viewport 800×600 par défaut est trop court pour cette fiche) ; 10 tests au total, tous verts.
+
 ## En cours
-- (rien — étape 2 terminée, en attente d'étape 3)
+- (rien — étape 3 terminée, en attente d'étape 4)
 
 ## Reste
-- Étape 3 — Fiche livre : 3 onglets en fondu (Synthèse IA & Presse : synthèse + 5 avis ; Le Web : 15 avis ; La Communauté : illimité + ajout d’avis + Signaler), curation simulée avec texte qui respire.
 - Étape 4 — Ma Bibliothèque : animation d’ajout PAL (couverture glisse vers l’icône de la barre qui s’élargit).
 - Étape 5 — Tendance & Recherche : animations des résultats.
 - Étape 6 — Comptes : lazy registration (e-mail/Google/Apple stubs), profil, déconnexion.
@@ -42,7 +51,8 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
 - Étape 9 — Livraison : `flutter build apk --release` (signature debug) → `dist/ela.apk` + commit final.
 
 ## Décisions
-- **Riverpod 3.3 / go_router 17** installés par Flutter 3.35 : API adaptées (`AsyncValue.when`, `Notifier` au lieu de `StateProvider` (passé en legacy dans riverpod 3), `StatefulShellRoute.indexedStack` + `currentIndex`/`goBranch(int)`, `MaterialApp.router(routerConfig:)`).
+- **Riverpod 3.3 / go_router 17** installés par Flutter 3.35 : API adaptées (`AsyncValue.when` + `.value` (pas de `.valueOrNull`), `Notifier` au lieu de `StateProvider` (passé en legacy dans riverpod 3), `StatefulShellRoute.indexedStack` + `currentIndex`/`goBranch(int)`, `MaterialApp.router(routerConfig:)`, `BuildContext.mounted` disponible).
+- **Fiche livre défilable d’un bloc** (en-tête + onglets + contenu dans un seul `SingleChildScrollView`) : la variante « en-tête + barre d’onglets fixes » déborde dès que la description est longue (vérifié au layout).
 - **Couvertures** : URL OpenLibrary `covers.openlibrary.org/b/id/<id>-M.jpg` (ISBN vérifiés via l’API) ; repli visuel élégant (dégradé sépia + initiale) si hors-ligne.
 - **Jetifier OFF** (voir Fait) : exigence RAM du conteneur.
 - **Google Books** : branché à l’étape 2 — `GoogleBooksClient.fetchByIsbn` (API publique sans clé, timeout 4–5 s, toute erreur → null) ; le catalogue local répond d’abord pour garder curation/avis cohérents.

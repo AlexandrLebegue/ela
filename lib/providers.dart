@@ -12,7 +12,10 @@ import 'data/fake/fake_payment_service.dart';
 import 'data/fake/fake_review_service.dart';
 import 'data/fake/fake_trend_service.dart';
 import 'data/models/book.dart';
+import 'data/models/curation_result.dart';
 import 'data/models/entitlement.dart';
+import 'data/models/library_entry.dart';
+import 'data/models/review.dart';
 import 'data/models/user_profile.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/book_lookup_service.dart';
@@ -109,6 +112,26 @@ final profileProvider = Provider<UserProfile>(
 
 final entitlementProvider = FutureProvider<Entitlement>(
   (ref) => ref.watch(paymentServiceProvider).currentEntitlement(),
+);
+
+/// Livre par ISBN (catalogue local, sinon API Google Books).
+final bookByIsbnProvider = FutureProvider.family<Book?, String>(
+  (ref, isbn) => ref.watch(bookLookupServiceProvider).lookupByIsbn(isbn),
+);
+
+/// Curation IA par ISBN (synthèse + 5 avis presse + 15 avis web),
+/// mise en cache par Riverpod (family).
+final curationProvider = FutureProvider.family<CurationResult, String>(
+  (ref, isbn) => ref.watch(curationServiceProvider).curate(isbn),
+);
+
+/// Avis de la communauté Ela par ISBN.
+final communityReviewsProvider = FutureProvider.family<List<Review>, String>(
+  (ref, isbn) => ref.watch(reviewServiceProvider).communityReviews(isbn),
+);
+
+final libraryEntriesProvider = StreamProvider<List<LibraryEntry>>(
+  (ref) => ref.watch(libraryServiceProvider).watchEntries(),
 );
 
 final trendingProvider =
