@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -115,6 +116,76 @@ class _InkSkeletonBlockState extends State<InkSkeletonBlock>
           ),
         );
       },
+    );
+  }
+}
+
+/// Révélation en cascade : l'élément apparaît (fondu + glisse vers le bas)
+/// avec un décalage proportionnel à son rang — utilisé pour les listes de
+/// résultats qui « s'empilent » en douceur.
+class StaggeredReveal extends StatefulWidget {
+  const StaggeredReveal({
+    super.key,
+    required this.index,
+    required this.child,
+    this.stagger = const Duration(milliseconds: 70),
+    this.maxStaggerIndex = 7,
+    this.distance = 14,
+  });
+
+  /// Rang dans la liste (le décalage est plafonné à [maxStaggerIndex]).
+  final int index;
+  final Widget child;
+  final Duration stagger;
+  final int maxStaggerIndex;
+  final double distance;
+
+  @override
+  State<StaggeredReveal> createState() => _StaggeredRevealState();
+}
+
+class _StaggeredRevealState extends State<StaggeredReveal>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  Timer? _delay;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    final rank = widget.index <= widget.maxStaggerIndex
+        ? widget.index
+        : widget.maxStaggerIndex;
+    // Timer annulable : un élément démonté avant son décalage ne laisse
+    // aucun timer orphelin.
+    _delay = Timer(widget.stagger * rank, () {
+      if (mounted) _c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _delay?.cancel();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curve = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+    return AnimatedBuilder(
+      animation: curve,
+      builder: (context, child) => Opacity(
+        opacity: curve.value,
+        child: Transform.translate(
+          offset: Offset(0, widget.distance * (1 - curve.value)),
+          child: child,
+        ),
+      ),
+      child: widget.child,
     );
   }
 }

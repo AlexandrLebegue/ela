@@ -46,11 +46,16 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - **Bug produit corrigé** : `FakeLibraryService.watchEntries()` émettait l’état initial au `StreamController.broadcast` **avant** l’abonnement du `StreamProvider` → événement perdu → bibliothèque vide jusqu’à la 1ʳᵉ modification. Désormais chaque abonnement reçoit d’abord un instantané (`Stream.multi`).
   - Tests : `test/library_test.dart` (2 tests : sections/tags/tri chronologique déterministe via prefs pré-chargées avec horodatages explicites ; vol + réception de la barre + entrée PAL persistée). 12 tests au total, tous verts, build APK debug OK.
 
+- **Étape 5 — Tendance & Recherche (animations)**
+  - `StaggeredReveal` (`lib/core/animations.dart`) : chaque ligne apparaît (fondu + glisse 14 px, 420 ms `easeOutCubic`) avec un décalage de 70 ms par rang (plafonné au rang 7) ; `Timer` annulable au dispose (pas de timer orphelin si la ligne est démontée avant son tour).
+  - Tendance : `AnimatedSwitcher` sur la liste (skeleton → liste, et au changement de catégorie : les deux listes fondent l'une dans l'autre) ; rangs **N°1-3 dorés gras**, rangs suivants en gris tabulaire.
+  - Recherche : `AnimatedSwitcher` hint ↔ résultats (clé par requête → chaque nouvelle recherche refait la cascade) ; squelettes pendant le debounce 350 ms + la recherche (250–900 ms).
+  - Tests : `test/trending_search_test.dart` (3 tests : squelettes → cascade + rangs + changement de catégorie ; recherche par auteur + clear ; aucun résultat). 15 tests au total, tous verts, build debug OK.
+
 ## En cours
-- (rien — étape 4 terminée, en attente d'étape 5)
+- (rien — étape 5 terminée, en attente d'étape 6)
 
 ## Reste
-- Étape 5 — Tendance & Recherche : animations des résultats.
 - Étape 6 — Comptes : lazy registration (e-mail/Google/Apple stubs), profil, déconnexion.
 - Étape 7 — Freemium : gating 1 avis presse + 2 web (flouté au-delà), 3 jetons IA/mois, Premium 2 €/mois, Radar à économies, MatchMaker, paywall.
 - Étape 8 — Finitions : onboarding 3 écrans, icône + splash, accessibilité, tests widget des écrans clés, README.

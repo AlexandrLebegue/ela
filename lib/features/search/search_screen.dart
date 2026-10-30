@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/animations.dart';
 import '../../core/format.dart';
 import '../../core/widgets/book_cover.dart';
 import '../../data/models/book.dart';
@@ -84,30 +85,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: query.isEmpty
-                  ? const _SearchHint()
-                  : FutureBuilder<List<Book>>(
-                      future: _searchFuture(query),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const _SearchLoading();
-                        }
-                        final results = snapshot.data ?? const <Book>[];
-                        if (results.isEmpty) {
-                          return _SearchNoResult(query: query);
-                        }
-                        return ListView.builder(
-                          padding:
-                              const EdgeInsets.fromLTRB(16, 4, 16, 96),
-                          itemCount: results.length,
-                          itemBuilder: (context, i) => _ResultRow(
-                            book: results[i],
-                            onTap: () =>
-                                context.go('/livre/${results[i].isbn}'),
-                          ),
-                        );
-                      },
-                    ),
+              // Chaque nouvelle requête fait fondre les résultats
+              // précédents ; chaque ligne apparaît en cascade.
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: query.isEmpty
+                    ? const _SearchHint(key: ValueKey('hint'))
+                    : _SearchResults(
+                        key: ValueKey('q-$query'),
+                        query: query,
+                        onSearch: _searchFuture,
+                      ),
+              ),
             ),
           ],
         ),
@@ -119,8 +110,47 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
       ref.read(bookLookupServiceProvider).search(query);
 }
 
+class _SearchResults extends ConsumerWidget {
+  const _SearchResults({
+    super.key,
+    required this.query,
+    required this.onSearch,
+  });
+
+  final String query;
+  final Future<List<Book>> Function(String query) onSearch;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<List<Book>>(
+      future: onSearch(query),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _SearchLoading();
+        }
+        final results = snapshot.data ?? const <Book>[];
+        if (results.isEmpty) {
+          return _SearchNoResult(query: query);
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+          itemCount: results.length,
+          itemBuilder: (context, i) => StaggeredReveal(
+            index: i,
+            child: _ResultRow(
+              key: ValueKey('res-$query-${results[i].isbn}'),
+              book: results[i],
+              onTap: () => context.go('/livre/${results[i].isbn}'),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _ResultRow extends StatelessWidget {
-  const _ResultRow({required this.book, required this.onTap});
+  const _ResultRow({super.key, required this.book, required this.onTap});
 
   final Book book;
   final VoidCallback onTap;
@@ -183,7 +213,7 @@ class _ResultRow extends StatelessWidget {
 }
 
 class _SearchHint extends StatelessWidget {
-  const _SearchHint();
+  const _SearchHint({super.key});
 
   @override
   Widget build(BuildContext context) {

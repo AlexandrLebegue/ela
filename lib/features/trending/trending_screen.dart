@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/animations.dart';
 import '../../core/format.dart';
+import '../../core/theme.dart';
 import '../../core/widgets/book_cover.dart';
 import '../../data/models/book.dart';
 import '../../providers.dart';
@@ -106,33 +108,58 @@ class _TrendingList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ref.watch(trendingProvider(category)).when(
-          data: (books) {
-            if (books.isEmpty) return const _TrendingEmpty();
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-              itemCount: books.length,
-              itemBuilder: (context, i) => _TrendingRow(
-                book: books[i],
-                onTap: () => context.go('/livre/${books[i].isbn}'),
-              ),
-            );
-          },
-          loading: () => const _TrendingSkeleton(),
-          error: (e, _) => const _TrendingEmpty(),
-        );
+    // Le changement de catégorie fait fondre l'ancienne liste vers la
+    // nouvelle (clé différente) ; l'arrivée des données anime chaque
+    // ligne en cascade.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 320),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: ref.watch(trendingProvider(category)).when(
+            data: (books) {
+              if (books.isEmpty) {
+                return const _TrendingEmpty(key: ValueKey('tendance-vide'));
+              }
+              return ListView.builder(
+                key: ValueKey('tendance-$category'),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                itemCount: books.length,
+                itemBuilder: (context, i) => StaggeredReveal(
+                  index: i,
+                  child: _TrendingRow(
+                    key: ValueKey('tendance-$category-${books[i].isbn}'),
+                    book: books[i],
+                    rank: i + 1,
+                    onTap: () => context.go('/livre/${books[i].isbn}'),
+                  ),
+                ),
+              );
+            },
+            loading: () =>
+                const _TrendingSkeleton(key: ValueKey('tendance-chargement')),
+            error: (e, _) =>
+                const _TrendingEmpty(key: ValueKey('tendance-vide')),
+          ),
+    );
   }
 }
 
 class _TrendingRow extends StatelessWidget {
-  const _TrendingRow({required this.book, required this.onTap});
+  const _TrendingRow({
+    super.key,
+    required this.book,
+    required this.rank,
+    required this.onTap,
+  });
 
   final Book book;
+  final int rank;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isTop = rank <= 3;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -142,6 +169,16 @@ class _TrendingRow extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
+              Text(
+                'N°$rank',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isTop ? FontWeight.w800 : FontWeight.w500,
+                  color: isTop ? ElaColors.gold : scheme.onSurfaceVariant,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 10),
               BookCover(book: book, width: 56),
               const SizedBox(width: 12),
               Expanded(
@@ -197,7 +234,7 @@ class _TrendingRow extends StatelessWidget {
 }
 
 class _TrendingSkeleton extends StatelessWidget {
-  const _TrendingSkeleton();
+  const _TrendingSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +320,7 @@ class _SkelBox extends StatelessWidget {
 }
 
 class _TrendingEmpty extends StatelessWidget {
-  const _TrendingEmpty();
+  const _TrendingEmpty({super.key});
 
   @override
   Widget build(BuildContext context) {
