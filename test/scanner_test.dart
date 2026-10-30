@@ -10,7 +10,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'ela.onboarded': true});
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 

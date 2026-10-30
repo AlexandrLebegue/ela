@@ -186,6 +186,22 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 final themeModeProvider =
     NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
 
+/// Onboarding (3 écrans) : montré une seule fois, mémorisé dans les
+/// SharedPreferences (`ela.onboarded`).
+class OnboardedNotifier extends Notifier<bool> {
+  @override
+  bool build() =>
+      ref.watch(sharedPreferencesProvider).getBool('ela.onboarded') ?? false;
+
+  Future<void> finish() async {
+    state = true;
+    await ref.read(sharedPreferencesProvider).setBool('ela.onboarded', true);
+  }
+}
+
+final onboardedProvider =
+    NotifierProvider<OnboardedNotifier, bool>(OnboardedNotifier.new);
+
 /// Shell à 4 branches : Tendance / Scanner / Bibliothèque / Recherche.
 /// Le détail livre est hors shell (pas de bottom bar).
 final routerProvider = Provider<GoRouter>((ref) {

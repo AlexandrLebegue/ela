@@ -74,6 +74,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                       ? null
                         : IconButton(
                           icon: const Icon(Icons.clear),
+                          tooltip: 'Effacer la recherche',
                           onPressed: () {
                             _controller.clear();
                             _debounce?.cancel();

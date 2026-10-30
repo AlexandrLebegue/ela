@@ -72,11 +72,20 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - Tests : `test/freemium_test.dart` (6 tests : jeton→fiche complète + compteur 2 ; Premium 5 presse/15 web + 2 traduits ; paywall souscription→annulation ; Radar teaser vs 6 badges ; MatchMaker vide/verrous/premium ; Bilan CSV) ; `book_detail_test` adapté au gating (1+4 floutés, 2+13 floutés). **26 tests au total, tous verts (2 runs), build debug OK.**
   - **Apprentissages 3.35/tests** : pas de widget `Masked` (fondu = `Opacity` fantôme) ; `hashValues` retiré de `dart:ui` → `stableHash` maison (`fake_delay.dart`) ; `AsyncValue.value ?? futureProvider` piège de typage (`Object` si l'autre membre est `Future`) → stream seul ; `ListView` paresseux : les éléments hors viewport (viewport 390×844) ne sont **pas dans l'arbre** → tests freemium en viewport 390×2000 + `ensureVisible`/`pumpAndSettle` avant les taps ; bouton en cours d'action qui change de libellé (« Débloquer — 1 jeton » → « Déblocage… ») : attendre la disparition du libellé **intermédiaire**, pas du final.
 
+- **Étape 8 — Finitions**
+  - **Splash de marque** (`lib/features/splash/splash_screen.dart`) : papier (ou nuit), disque doré + `Icons.menu_book` (`Icons.stories` n'existe pas en 3.35) dans un halo qui respire (controller 1400 ms, disposé proprement) ; durée pilotée par `ElaApp` (1,1 s) — **omis sous `flutter test`** (`isRunningUnderFlutterTest`) pour ne jamais laisser de ticker/timer en attente.
+  - **Onboarding 3 écrans** (`lib/features/onboarding/onboarding_screen.dart`) : Bienvenue / « 20 avis, 1 verdict » / bibliothèque+Premium ; dots animés, Retour/Suivant/« Commencer à lire », « Passer » ; `onboardedProvider` (Notifier bool, prefs `ela.onboarded`) ; `app.dart` : splash → (onboarding 1ʳᵉ fois) → `MaterialApp.router` (3 branches de `MaterialApp`, switch par rebuild du provider).
+  - **Icône Ela** : `tools/gen_launcher_icon.dart` — **PNG RGBA encodés à la main en pur Dart** (zlib « stored » sans compression, CRC32/Adler-32, supersampling 2×2) : carré papier aux coins arrondis + disque doré + livre ouvert, 5 densités ; **adaptive icon** API 26+ (`mipmap-anydpi-v26` : fond `elaPaper` + vector `ic_ela_monogram.xml` 108 dp, disque+livre dans la safe zone).
+  - **Splash natif Android** : `drawable/launch_background.xml` = papier + monogramme (layer-list `android:gravity=center` — `<bitmap>` d'un vector échoue sur les anciennes API) ; variante `drawable-night` bleu nuit ; couleurs `elaPaper/elaNight/elaGold` dans `values/ela_colors.xml`.
+  - **Accessibilité** : `onSecondary` = encre sur or (5:1 au lieu de 2,6:1 pour le blanc) dans `theme.dart` + bouton onboarding aligné ; tooltips/Semantics sur les icon-only buttons (barre 4 entrées, scanner, profil, partage, déconnexion, effacer recherche) ; tailles de texte via le `textTheme` système (TextScaler).
+  - **Tests** : `test/onboarding_test.dart` (3 tests : parcours 3 écrans + retour → shell, Passer + persistance du flag, 2ᵉ lancement direct) ; les 3 tests pumpant `ElaApp` seedent `ela.onboarded` (**`setMockInitialValues` remplace toute la map** — les seeds locaux doivent le re-porter). **29 tests au total, tous verts (2 runs), build debug OK.**
+  - **README.md** : lancement (env.sh, run, build, tests), structure lib/, ce que fait l'app, branchement Firebase phase 2 (interfaces + flag `BACKEND`), notes (couvertures OpenLibrary, signature debug).
+  - **Apprentissages** : `flutter test` + timers — toute fin de test avec un `Future.delayed`/`Timer` du fake non expiré échoue (`!timersPending`) ; le `settleAll` (8×300 ms) doit suivre **chaque** transition vers un écran qui déclenche des fakes ; fonction locale forward-reference interdite en Dart (déclarer `settleAll` avant `pumpApp`) ; un `sed` global sur `pumpAndSettle` peut casser le corps même de `settleAll` (recursion) ; `#!/usr/bin/env` ne peut être que ligne 1 sinon le parseur s'égare.
+
 ## En cours
-- (rien — étape 7 terminée, en attente d'étape 8)
+- (rien — étape 8 terminée, en attente d'étape 9)
 
 ## Reste
-- Étape 8 — Finitions : onboarding 3 écrans, icône + splash, accessibilité, tests widget des écrans clés, README.
 - Étape 9 — Livraison : `flutter build apk --release` (signature debug) → `dist/ela.apk` + commit final.
 
 ## Décisions

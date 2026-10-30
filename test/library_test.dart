@@ -12,7 +12,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'ela.onboarded': true});
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
@@ -41,7 +41,10 @@ void main() {
       'triés chronologiquement', (tester) async {
     // Persistance pré-chargee avec des horodatages explicites : le tri
     // chronologique est alors déterministe (le fake utilise DateTime.now()).
+    // setMockInitialValues remplace toute la map : on garde le flag
+    // d'onboarding (sinon l'app démarrerait sur l'onboarding).
     SharedPreferences.setMockInitialValues({
+      'ela.onboarded': true,
       'ela.library': '[{"isbn":"9782070667918","section":"history",'
           '"addedAt":"2026-10-20T10:00:00.000"},'
           '{"isbn":"9782070409236","section":"history",'

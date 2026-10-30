@@ -43,7 +43,8 @@ class ElaTheme {
       primaryContainer: isLight ? Color(0xFFF3DCC0) : Color(0xFF4A3A22),
       onPrimaryContainer: isLight ? ElaColors.sepiaDeep : ElaColors.nightSepiaDeep,
       secondary: isLight ? ElaColors.gold : Color(0xFFD9A556),
-      onSecondary: Colors.white,
+      // Accessibilité : encre sur or (≥ 5:1) plutôt que blanc (≈ 2,6:1).
+      onSecondary: isLight ? ElaColors.ink : Color(0xFF3D2E1F),
       secondaryContainer: isLight ? Color(0xFFF7E7C8) : Color(0xFF3A3124),
       onSecondaryContainer: isLight ? Color(0xFF6B4E1E) : Color(0xFFEED9AE),
       surface: isLight ? ElaColors.paperSurface : ElaColors.nightSurface,
