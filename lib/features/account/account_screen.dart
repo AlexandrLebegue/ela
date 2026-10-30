@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/animations.dart';
+import '../../core/format.dart';
 import '../../core/haptics.dart';
 import '../../core/theme.dart';
+import '../../data/models/library_entry.dart';
 import '../../data/models/user_profile.dart';
 import '../../providers.dart';
 
@@ -277,17 +281,21 @@ class _AnonymousView extends StatelessWidget {
   }
 }
 
-class _ProfileView extends StatelessWidget {
+class _ProfileView extends ConsumerWidget {
   const _ProfileView({required this.profile, required this.onSignOut});
 
   final UserProfile profile;
   final VoidCallback onSignOut;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final name = profile.displayNameOrEmail;
     final initial = name.substring(0, 1).toUpperCase();
+    final entitlement = ref.watch(entitlementStreamProvider).value;
+    if (entitlement == null) return const SizedBox.shrink();
+    final entries =
+        ref.watch(libraryEntriesProvider).value ?? const <LibraryEntry>[];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -382,6 +390,25 @@ class _ProfileView extends StatelessWidget {
             ),
           ),
         ),
+        if (entitlement.isPremium) ...[
+          const SizedBox(height: 12),
+          _BilanCard(
+            history: entries
+                .where((e) => e.section == LibrarySection.history)
+                .length,
+            toRead: entries
+                .where((e) => e.section == LibrarySection.toRead)
+                .length,
+            tokens: entitlement.aiTokens,
+            reviews: ref
+                .read(sharedPreferencesProvider)
+                .getInt('ela.stats.reviews') ??
+                0,
+          ),
+        ] else
+          _PremiumCard(
+            onTap: () => GoRouter.maybeOf(context)?.push('/premium'),
+          ),
         const SizedBox(height: 24),
         OutlinedButton.icon(
           onPressed: onSignOut,
@@ -404,6 +431,209 @@ class _ProfileView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Invite Premium (version gratuite) : résumé des fonctions + CTA.
+class _PremiumCard extends StatelessWidget {
+  const _PremiumCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.auto_awesome, size: 22, color: ElaColors.gold),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Ela Premium — 2 €/mois',
+                    style: TextStyle(
+                      fontFamily: 'Lora',
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '20 avis par livre, traduction des avis étrangers, Radar à '
+              'économies, MatchMaker, sans pub, Bilan de curiosité exportable.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.tonal(onPressed: onTap,
+                  child: const Text('Découvrir Premium')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bilan de curiosité (Premium) : statistiques + export CSV.
+class _BilanCard extends StatelessWidget {
+  const _BilanCard({
+    required this.history,
+    required this.toRead,
+    required this.tokens,
+    required this.reviews,
+  });
+
+  final int history;
+  final int toRead;
+  final int tokens;
+  final int reviews;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.insights_outlined,
+                    size: 22, color: scheme.onSurfaceVariant),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Bilan de curiosité',
+                    style: TextStyle(
+                      fontFamily: 'Lora',
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _Stat(label: 'Lus', value: formatInt(history)),
+                _Stat(label: 'En PAL', value: formatInt(toRead)),
+                _Stat(label: 'Jetons IA', value: formatInt(tokens)),
+                _Stat(label: 'Avis', value: formatInt(reviews)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: () => _exportCsv(context),
+                icon: const Icon(Icons.file_download_outlined, size: 17),
+                label: const Text('Exporter en CSV'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _exportCsv(BuildContext context) {
+    final csv = [
+      'champ;valeur',
+      'livres_lus;$history',
+      'pile_a_lire;$toRead',
+      'jetons_ia_ce_mois;$tokens',
+      'avis_publies;$reviews',
+      'statut;premium',
+    ].join('\n');
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Bilan de curiosité — CSV'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                csv,
+                style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: csv));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('CSV copié dans le presse-papier.')),
+              );
+            },
+            child: const Text('Copier'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: 'Lora',
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: scheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

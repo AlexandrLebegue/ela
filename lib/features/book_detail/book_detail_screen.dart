@@ -9,10 +9,12 @@ import '../../core/theme.dart';
 import '../../core/widgets/book_cover.dart';
 import '../../data/fake/demo_books.dart';
 import '../../data/models/book.dart';
+import '../../data/models/entitlement.dart';
 import '../../data/models/library_entry.dart';
 import '../../data/models/review.dart';
 import '../../providers.dart';
 import '../library/fly_to_library.dart';
+import '../premium/premium_screen.dart';
 
 /// Fiche livre (étape 3) : en-tête + 3 onglets en fondu doux —
 /// Synthèse IA & Presse / Le Web / La Communauté — + PAL / Acheter.
@@ -208,6 +210,14 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     );
   }
 }
+
+String _languageName(String code) => switch (code) {
+      'en' => 'anglais',
+      'es' => 'espagnol',
+      'de' => 'allemand',
+      'it' => 'italien',
+      _ => code,
+    };
 
 enum _DetailTab { aiPress, web, community }
 
@@ -488,10 +498,25 @@ class _CurationLoading extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.summary, this.aiTokens});
+  const _SummaryCard({
+    required this.summary,
+    this.aiTokens,
+    this.truncated = false,
+  });
 
   final String summary;
   final int? aiTokens;
+
+  /// Version gratuite : la synthèse est recoupée (débloquée par 1 jeton).
+  final bool truncated;
+
+  String get _shown {
+    if (!truncated) return summary;
+    final cut = summary.length > 220 ? summary.substring(0, 220) : summary;
+    final dot = cut.lastIndexOf('. ');
+    if (dot > 80) return '${cut.substring(0, dot + 1)}…';
+    return '$cut…';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -538,7 +563,7 @@ class _SummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              summary,
+              _shown,
               style: const TextStyle(fontSize: 14.5, height: 1.6),
             ),
           ],
@@ -579,6 +604,14 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+/// Freemium (étape 7) : la fiche est « complète » si on est Premium ou
+/// si un jeton IA a été dépensé pour ce livre. Sinon : 1 avis presse +
+/// 2 avis web visibles, le reste flouté avec invitation.
+bool _isFullAccess(WidgetRef ref, String isbn, Entitlement? entitlement) =>
+    entitlement != null &&
+    (entitlement.isPremium ||
+        ref.watch(unlockedBooksProvider).contains(isbn));
+
 class _AiPressTab extends ConsumerWidget {
   const _AiPressTab({super.key, required this.isbn});
 
@@ -587,7 +620,8 @@ class _AiPressTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final curation = ref.watch(curationProvider(isbn));
-    final entitlement = ref.watch(entitlementProvider).value;
+    final entitlement = ref.watch(entitlementStreamProvider).value;
+    final full = _isFullAccess(ref, isbn, entitlement);
 
     return curation.when(
       loading: () => const _CurationLoading(),
@@ -597,9 +631,18 @@ class _AiPressTab extends ConsumerWidget {
       ),
       data: (c) => _TabScroll(
         children: [
-          _SummaryCard(summary: c.summary, aiTokens: entitlement?.aiTokens),
+          _SummaryCard(
+            summary: c.summary,
+            aiTokens: entitlement?.aiTokens,
+            truncated: !full,
+          ),
           _SectionHeader('La presse en a parlé'),
-          for (final r in c.press) _ReviewCard(review: r),
+          for (var i = 0; i < c.press.length; i++)
+            full || i < 1
+                ? _ReviewCard(review: c.press[i])
+                : const _BlurredReview(),
+          if (entitlement != null && !entitlement.isPremium && !full)
+            _TokenUnlockCard(isbn: isbn),
         ],
       ),
     );
@@ -614,6 +657,8 @@ class _WebTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final curation = ref.watch(curationProvider(isbn));
+    final entitlement = ref.watch(entitlementStreamProvider).value;
+    final full = _isFullAccess(ref, isbn, entitlement);
 
     return curation.when(
       loading: () => const _CurationLoading(
@@ -623,8 +668,191 @@ class _WebTab extends ConsumerWidget {
       data: (c) => _TabScroll(
         children: [
           _SectionHeader('${c.web.length} avis du web'),
-          for (final r in c.web) _ReviewCard(review: r),
+          for (var i = 0; i < c.web.length; i++)
+            full || i < 2
+                ? _ReviewCard(
+                    review: c.web[i],
+                    translated: full && c.web[i].language != 'fr',
+                  )
+                : const _BlurredReview(),
+          if (entitlement != null && !entitlement.isPremium && !full)
+            _TokenUnlockCard(isbn: isbn),
         ],
+      ),
+    );
+  }
+}
+
+/// Avis flouté (freemium) : forme d'une carte d'avis, contenu illisible,
+/// invitation Premium au centre.
+class _BlurredReview extends StatelessWidget {
+  const _BlurredReview();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // « Flouté » en opacité fantôme : les contours restent, les
+            // mots non. (Pas de filter en 3.35 : léger et lisible.)
+            Opacity(
+              opacity: 0.13,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Lecteur d’Ela  ·  blog  ·  12 mai 2026'),
+                  const SizedBox(height: 6),
+                  const Text('« Un titre d’avis qui ne dit pas où on va »'),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Ceci est l’aperçu d’un avis. Le texte complet n’est '
+                    'pas lisible dans la version gratuite — les contours '
+                    'restent, les mots non. L’éditeur a eu l’idée, la mise '
+                    'en page a fait le reste, et la lecture a continué '
+                    'seule, longtemps, dans un train.',
+                    style: TextStyle(fontSize: 13.5, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.lock_outline, size: 15,
+                    color: scheme.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Text(
+                  'Avis Premium',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: ElaColors.sepiaDeep,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Carte « dépenser 1 jeton IA » pour débloquer la fiche complète.
+class _TokenUnlockCard extends ConsumerStatefulWidget {
+  const _TokenUnlockCard({required this.isbn});
+
+  final String isbn;
+
+  @override
+  ConsumerState<_TokenUnlockCard> createState() => _TokenUnlockCardState();
+}
+
+class _TokenUnlockCardState extends ConsumerState<_TokenUnlockCard> {
+  bool _spending = false;
+
+  Future<void> _unlock() async {
+    if (_spending) return;
+    setState(() => _spending = true);
+    final ok = await ref.read(paymentServiceProvider).spendAiToken();
+    if (!mounted) return;
+    setState(() => _spending = false);
+    if (ok) {
+      ref.read(unlockedBooksProvider.notifier).unlock(widget.isbn);
+      ElaHaptics.heartbeat();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final entitlement = ref.watch(entitlementStreamProvider).value;
+    final tokens = entitlement?.aiTokens ?? 0;
+
+    if (tokens <= 0) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: PremiumUnlockCard(
+          message:
+              'Plus de jetons IA ce mois-ci. Premium inclut 3 jetons par '
+              'mois, et ouvre toutes les fiches sans en dépenser.',
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: ElaColors.gold, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Débloquer la fiche complète',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: scheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '✦ $tokens jetons ce mois-ci',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '1 jeton IA débloque la synthèse complète et tous les avis '
+                'de cette fiche.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.45,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonal(
+                  onPressed: _spending ? null : _unlock,
+                  child: _spending
+                      ? BreathingText(
+                          'Déblocage…',
+                          style: TextStyle(
+                            color: scheme.onSecondaryContainer,
+                            fontSize: 13.5,
+                          ),
+                        )
+                      : const Text('Débloquer — 1 jeton'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -759,11 +987,15 @@ class _ReviewCard extends StatefulWidget {
     required this.review,
     this.reportable = false,
     this.onReport,
+    this.translated = false,
   });
 
   final Review review;
   final bool reportable;
   final VoidCallback? onReport;
+
+  /// Avis étranger traduit par Ela (fonction Premium, simulée).
+  final bool translated;
 
   @override
   State<_ReviewCard> createState() => _ReviewCardState();
@@ -811,6 +1043,24 @@ class _ReviewCardState extends State<_ReviewCard> {
                   ),
               ],
             ),
+            if (widget.translated) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.translate, size: 14,
+                      color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Traduit par Ela (${_languageName(widget.review.language)})',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontStyle: FontStyle.italic,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 6),
             Text(
               '« ${r.title} »',
@@ -907,6 +1157,9 @@ class _WriteReviewSheetState extends ConsumerState<_WriteReviewSheet> {
     if (!mounted) return;
     setState(() => _submitting = false);
     ref.invalidate(communityReviewsProvider(isbn));
+    // Bilan de curiosité : compteur d'avis publiés (persistance locale).
+    final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setInt('ela.stats.reviews', (prefs.getInt('ela.stats.reviews') ?? 0) + 1);
     Navigator.of(context).pop();
     ElaHaptics.heartbeat();
     ScaffoldMessenger.of(context).showSnackBar(

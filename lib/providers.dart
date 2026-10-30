@@ -27,6 +27,9 @@ import 'data/services/review_service.dart';
 import 'data/services/trend_service.dart';
 import 'features/account/account_screen.dart';
 import 'features/book_detail/book_detail_screen.dart';
+import 'features/premium/matchmaker_screen.dart';
+import 'features/premium/premium_screen.dart';
+import 'features/premium/radar_screen.dart';
 import 'features/home_shell.dart';
 import 'features/library/library_screen.dart';
 import 'features/scanner/scanner_screen.dart';
@@ -118,6 +121,27 @@ final profileStreamProvider = StreamProvider<UserProfile>(
 
 final entitlementProvider = FutureProvider<Entitlement>(
   (ref) => ref.watch(paymentServiceProvider).currentEntitlement(),
+);
+
+/// Entitlement réactif (jetons dépensés, abonnement, annulation).
+final entitlementStreamProvider = StreamProvider<Entitlement>(
+  (ref) => ref.watch(paymentServiceProvider).watchEntitlement(),
+);
+
+/// Fiches « déblocquées » avec un jeton IA (session courante).
+class _UnlockedBooksNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  void unlock(String isbn) =>
+      state = {...state, isbn};
+
+  void lockAll() => state = const {};
+}
+
+final unlockedBooksProvider =
+    NotifierProvider<_UnlockedBooksNotifier, Set<String>>(
+  _UnlockedBooksNotifier.new,
 );
 
 /// Livre par ISBN (catalogue local, sinon API Google Books).
@@ -214,6 +238,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/compte',
         builder: (context, state) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: '/premium',
+        builder: (context, state) => const PremiumScreen(),
+      ),
+      GoRoute(
+        path: '/radar',
+        builder: (context, state) => const RadarScreen(),
+      ),
+      GoRoute(
+        path: '/match',
+        builder: (context, state) => const MatchMakerScreen(),
       ),
     ],
   );

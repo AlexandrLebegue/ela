@@ -10,7 +10,6 @@ import 'fake_delay.dart';
 class FakePaymentService implements PaymentService {
   FakePaymentService(this._prefs) {
     _entitlement = _load();
-    _controller.add(_entitlement);
   }
 
   final SharedPreferences _prefs;
@@ -19,6 +18,14 @@ class FakePaymentService implements PaymentService {
   late Entitlement _entitlement;
   final StreamController<Entitlement> _controller =
       StreamController<Entitlement>.broadcast();
+
+  @override
+  Stream<Entitlement> watchEntitlement() => Stream.multi((controller) {
+        // Instantané initial : un abonnement tardif ne rate pas l'état.
+        controller.add(_entitlement);
+        final sub = _controller.stream.listen(controller.add);
+        controller.onCancel = sub.cancel;
+      });
 
   Entitlement _load() {
     final raw = _prefs.getString(_key);
@@ -54,9 +61,6 @@ class FakePaymentService implements PaymentService {
         max: const Duration(milliseconds: 400));
     return _entitlement;
   }
-
-  @override
-  Stream<Entitlement> watchEntitlement() => _controller.stream;
 
   @override
   Future<void> subscribePremium() async {

@@ -516,10 +516,33 @@ abstract final class DemoData {
       _generate(book, ReviewSource.press, 5, _pressOutlets, _pressTitles,
           _pressTemplates);
 
-  /// 15 avis web curés.
-  static List<Review> webFor(Book book) =>
-      _generate(book, ReviewSource.web, 15, _webOutlets, _webTitles,
-          _webTemplates);
+  /// 15 avis web curés — dont deux en langues étrangères (la traduction
+  /// automatique est une fonction Premium, simulée côté UI).
+  static List<Review> webFor(Book book) {
+    final list = _generate(
+        book, ReviewSource.web, 15, _webOutlets, _webTitles, _webTemplates);
+    final h = stableHash('${book.isbn}lang');
+    final i1 = h % 15;
+    var i2 = (h >> 4) % 15;
+    if (i2 == i1) i2 = (i2 + 1) % 15;
+    list[i1] = _withLanguage(list[i1], 'en');
+    list[i2] = _withLanguage(list[i2], 'es');
+    return list;
+  }
+
+  static Review _withLanguage(Review r, String language) => Review(
+        id: r.id,
+        isbn: r.isbn,
+        source: r.source,
+        author: r.author,
+        outlet: r.outlet,
+        title: r.title,
+        text: r.text,
+        url: r.url,
+        language: language,
+        publishedAt: r.publishedAt,
+        likes: r.likes,
+      );
 
   /// Avis communauté (démo, illimités côté fake).
   static List<Review> communityFor(Book book) =>

@@ -60,11 +60,22 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - Tests : `test/account_test.dart` (5 tests : invite anonyme + 3 méthodes ; e-mail validation→profil→persistance→déconnexion ; Google stub ; profil persisté ; Bibliothèque→votre espace via le vrai routeur). 20 tests au total, tous verts, build debug OK.
   - **Apprentissage tests** : `pumpAndSettle` seul ne déclenche PAS les `Future.delayed` du fake qui n'engendrent pas de frame → pattern `settleAll` (8×`pump(300 ms)` + settle), déjà utilisé dans app_test, généralisé aux tests routés.
 
+- **Étape 7 — Freemium**
+  - **Gating fiche livre** (`book_detail_screen.dart`) : gratuit → 1 avis presse visible + 4 floutés (carte fantôme translucide, verrou + « Avis Premium ») et 2 avis web visibles + 13 floutés ; synthèse IA rognée (~220 caractères à la ponctuation) pour le gratuit. Déblocage : **1 jeton IA** (3/mois, persistés, compteur « ✦ N jetons ce mois-ci ») via `unlockedBooksProvider` (Notifier de `Set<isbn>`) ; 0 jeton → carte « Premium inclut 3 jetons/mois ». Premium → tout visible sans dépenser.
+  - **Traduction simulée Premium** : 2 des 15 avis web sont en langue étrangère (en/es, indices déterministes `stableHash`) ; avec Premium (ou fiche débloquée) ils reçoivent le chip « Traduit par Ela (anglais/espagnol) ».
+  - **Paywall `/premium`** (`lib/features/premium/premium_screen.dart`) : 2 €/mois sans engagement, 7 avantages, abonnement/annulation simulés (délais fake, `Entitlement.premium` persisté, « Membre depuis … ») ; `PremiumUnlockCard` réutilisable (compact → « Découvrir Premium », sinon « Voir Premium — 2 €/mois »).
+  - **Radar à économies `/radar`** (`radar_screen.dart`) : top 6 par remise (`usedPriceEur/priceEur`, prix d'occasion fictifs) ; gratuit → teaser + 1ʳᵉ affaire + 4 floutées + carte Premium ; Premium → les 6 avec badge « −N % ».
+  - **MatchMaker `/match`** (`matchmaker_screen.dart`) : 2 suggestions par livre de l'étagère (même genre d'abord, `stableHash` déterministe) avec score 62–97 % (barre dorée) ; gratuit → 2 visibles + verrous « score masqué » + carte ; Premium → tout ; état vide si étagère vide.
+  - **Bilan de curiosité** (écran de compte, Premium) : cartes stats (Lus / En PAL / Jetons IA du mois / Avis publiés — compteur prefs `ela.stats.reviews` incrémenté à chaque avis) + **export CSV** (dialogue : `champ;valeur`, copie presse-papier + snack). Gratuit → carte teaser « Premium » vers le paywall.
+  - `FakePaymentService.watchEntitlement()` : fix « instantané initial » (même pattern que bibliothèque/profil) ; `entitlementStreamProvider` (stream) + suppression du fallback `FutureProvider` dans les vues (le `Future.delayed` du fake survivait aux `pumpAndSettle` des tests → timers orphelins).
+  - Entrées Radar/MatchMaker ajoutées sur l'écran Tendance (icône cadenas si gratuit).
+  - Tests : `test/freemium_test.dart` (6 tests : jeton→fiche complète + compteur 2 ; Premium 5 presse/15 web + 2 traduits ; paywall souscription→annulation ; Radar teaser vs 6 badges ; MatchMaker vide/verrous/premium ; Bilan CSV) ; `book_detail_test` adapté au gating (1+4 floutés, 2+13 floutés). **26 tests au total, tous verts (2 runs), build debug OK.**
+  - **Apprentissages 3.35/tests** : pas de widget `Masked` (fondu = `Opacity` fantôme) ; `hashValues` retiré de `dart:ui` → `stableHash` maison (`fake_delay.dart`) ; `AsyncValue.value ?? futureProvider` piège de typage (`Object` si l'autre membre est `Future`) → stream seul ; `ListView` paresseux : les éléments hors viewport (viewport 390×844) ne sont **pas dans l'arbre** → tests freemium en viewport 390×2000 + `ensureVisible`/`pumpAndSettle` avant les taps ; bouton en cours d'action qui change de libellé (« Débloquer — 1 jeton » → « Déblocage… ») : attendre la disparition du libellé **intermédiaire**, pas du final.
+
 ## En cours
-- (rien — étape 6 terminée, en attente d'étape 7)
+- (rien — étape 7 terminée, en attente d'étape 8)
 
 ## Reste
-- Étape 7 — Freemium : gating 1 avis presse + 2 web (flouté au-delà), 3 jetons IA/mois, Premium 2 €/mois, Radar à économies, MatchMaker, paywall.
 - Étape 8 — Finitions : onboarding 3 écrans, icône + splash, accessibilité, tests widget des écrans clés, README.
 - Étape 9 — Livraison : `flutter build apk --release` (signature debug) → `dist/ela.apk` + commit final.
 

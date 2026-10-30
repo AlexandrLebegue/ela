@@ -59,7 +59,8 @@ void main() {
           )
           .length;
 
-  testWidgets('La fiche affiche l’en-tête, la synthèse IA et 5 avis presse',
+  testWidgets(
+      'La fiche (gratuit) : synthèse recoupée, 1 avis presse visible, 4 floutés + carte jeton',
       (tester) async {
     phoneView(tester);
     await pumpDetail(tester);
@@ -70,11 +71,15 @@ void main() {
     expect(find.textContaining("14 900 lecteurs d’Ela"), findsOneWidget);
     expect(find.text('Synthèse Ela'), findsOneWidget);
     expect(find.text('La presse en a parlé'), findsOneWidget);
-    expect(reviewCards(tester), 5);
+    // Freemium : 1 avis presse réel, 4 floutés, carte de déblocage.
+    expect(reviewCards(tester), 1);
+    expect(find.text('Avis Premium'), findsNWidgets(4));
+    expect(find.text('Débloquer la fiche complète'), findsOneWidget);
     expect(find.textContaining('jetons IA ce mois-ci'), findsOneWidget);
   });
 
-  testWidgets('L’onglet « Le Web » liste 15 avis', (tester) async {
+  testWidgets('L’onglet « Le Web » (gratuit) : 2 avis visibles, 13 floutés',
+      (tester) async {
     phoneView(tester);
     await pumpDetail(tester);
     await settleAll(tester);
@@ -83,7 +88,8 @@ void main() {
     await settleAll(tester);
 
     expect(find.textContaining('15 avis du web'), findsOneWidget);
-    expect(reviewCards(tester), 15);
+    expect(reviewCards(tester), 2);
+    expect(find.text('Avis Premium'), findsNWidgets(13));
   });
 
   testWidgets('L’onglet « La Communauté » liste les avis et permet de signaler',

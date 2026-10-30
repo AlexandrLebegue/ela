@@ -133,6 +133,8 @@ void main() {
     expect(prefs.getString('ela.profile'), isNotNull);
 
     // Déconnexion → retour à l'anonymat, profil purgé.
+    await tester.ensureVisible(find.text('Se déconnecter'));
+    await tester.pump();
     await tester.tap(find.text('Se déconnecter'));
     await pumpUntil(tester, find.text('Bienvenue chez Ela'));
     expect(prefs.getString('ela.profile'), isNull);

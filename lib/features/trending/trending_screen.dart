@@ -73,6 +73,8 @@ class _TrendingHeader extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 14),
+          _PremiumCards(),
+          const SizedBox(height: 14),
           SizedBox(
             height: 44,
             child: ref.watch(categoriesProvider).when(
@@ -332,6 +334,127 @@ class _TrendingEmpty extends StatelessWidget {
           'Rien ne bouge encore dans cette catégorie.',
           textAlign: TextAlign.center,
           style: TextStyle(color: scheme.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+}
+
+/// Cartes d'accès aux fonctions Premium (Radar à économies, MatchMaker).
+class _PremiumCards extends ConsumerWidget {
+  const _PremiumCards();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entitlement = ref.watch(entitlementStreamProvider).value;
+    final premium = entitlement?.isPremium ?? false;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _PremiumCardEntry(
+            icon: Icons.sell,
+            title: 'Radar',
+            detail: premium
+                ? 'Vos meilleures occasions'
+                : 'Occasions à prix doux',
+            premium: premium,
+            onTap: () => context.go('/radar'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _PremiumCardEntry(
+            icon: Icons.handshake_outlined,
+            title: 'MatchMaker',
+            detail: premium
+                ? 'Vos prochains matchs'
+                : 'Des livres qui vous ressemblent',
+            premium: premium,
+            onTap: () => context.go('/match'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PremiumCardEntry extends StatelessWidget {
+  const _PremiumCardEntry({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.premium,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+  final bool premium;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: ElaColors.gold.withValues(alpha: 0.14),
+                ),
+                child: Icon(icon, size: 18, color: ElaColors.sepiaDeep),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        if (!premium) ...[
+                          const SizedBox(width: 4),
+                          Icon(Icons.lock_outline,
+                              size: 12, color: scheme.onSurfaceVariant),
+                        ]
+                      ],
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
