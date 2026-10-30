@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/animations.dart';
 import '../../core/format.dart';
@@ -81,8 +82,28 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     return Rect.fromCenter(center: center, width: 34, height: 48);
   }
 
+  /// Ouvre l'écran de compte (lazy registration). Dégradation douce si
+  /// aucun routeur n'est disponible (tests de widgets isolés).
+  void _openAccount() {
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      router.push('/compte');
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Un compte Ela est requis (écran de compte).'),
+      ),
+    );
+  }
+
   Future<void> _purchase(Book book) async {
     if (_purchased) return;
+    // Le paiement demande un compte (lazy registration, étape 6).
+    if (ref.read(profileProvider).isAnonymous) {
+      _openAccount();
+      return;
+    }
     setState(() => _purchased = true);
     final link =
         await ref.read(paymentServiceProvider).affiliatePurchaseLink(widget.isbn);
@@ -968,8 +989,7 @@ class _WriteReviewSheetState extends ConsumerState<_WriteReviewSheet> {
   }
 }
 
-/// Invite à créer un compte avant de publier (lazy registration —
-/// navigation branchée à l'étape 6).
+/// Invite à créer un compte avant de publier (lazy registration).
 class _AnonymousPrompt extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1002,11 +1022,12 @@ class _AnonymousPrompt extends StatelessWidget {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('La création de compte arrive très bientôt.'),
-              ),
-            );
+            final router = GoRouter.maybeOf(context);
+            // On quitte la feuille, puis on ouvre l'écran de compte.
+            Navigator.of(context).pop();
+            if (router != null) {
+              router.push('/compte');
+            }
           },
           child: const Text('Créer mon compte'),
         ),

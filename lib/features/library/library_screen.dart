@@ -36,25 +36,38 @@ class LibraryScreen extends ConsumerWidget {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.fromLTRB(16, 24, 8, 8),
+                child: Row(
                   children: [
-                    Text(
-                      'Ma Bibliothèque',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(fontFamily: 'Lora',
-                              fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Votre étagère : ce que vous avez lu, et ce qui attend.',
-                      style: TextStyle(
-                        color: scheme.onSurfaceVariant,
-                        fontSize: 14,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ma Bibliothèque',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(fontFamily: 'Lora',
+                                    fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Votre étagère : ce que vous avez lu, et ce qui '
+                            'attend.',
+                            style: TextStyle(
+                              color: scheme.onSurfaceVariant,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    // Profil / déconnexion (lazy registration, étape 6).
+                    IconButton(
+                      icon: const Icon(Icons.person_outline),
+                      tooltip: 'Votre espace',
+                      onPressed: () => context.push('/compte'),
                     ),
                   ],
                 ),

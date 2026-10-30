@@ -52,11 +52,18 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - Recherche : `AnimatedSwitcher` hint ↔ résultats (clé par requête → chaque nouvelle recherche refait la cascade) ; squelettes pendant le debounce 350 ms + la recherche (250–900 ms).
   - Tests : `test/trending_search_test.dart` (3 tests : squelettes → cascade + rangs + changement de catégorie ; recherche par auteur + clear ; aucun résultat). 15 tests au total, tous verts, build debug OK.
 
+- **Étape 6 — Comptes (lazy registration)**
+  - Écran `/compte` (`lib/features/account/account_screen.dart`) : anonyme → « Bienvenue chez Ela » + explication (compte demandé seulement pour : publier un avis, cloud, payer) + formulaire e-mail/mot de passe avec validation douce (erreurs en texte, pas de rouge agressif) + boutons Google et Apple (stubs) ; connecté → avatar initiale doré, nom, e-mail, badge « Membre d’Ela », carte « bibliothèque locale / cloud simulé », **Se déconnecter** (purge le profil, ne touche pas la bibliothèque locale).
+  - Déclencheurs : « Créer mon compte » dans la feuille d'avis (ferme la feuille puis `push('/compte')`) ; **Acheter** sur la fiche quand on est anonyme ; icône profil dans l'en-tête Bibliothèque.
+  - `profileStreamProvider` (StreamProvider) : profil réactif ; même fix « instantané initial » que la bibliothèque (`Stream.multi`, l'add du contrôleur au constructeur était perdu).
+  - go_router 17.2.3 : pas de `GoRouter.of(optional:)` → `GoRouter.maybeOf(context)` ; navigation dégénérée (snack) si aucun routeur (tests isolés sans router).
+  - Tests : `test/account_test.dart` (5 tests : invite anonyme + 3 méthodes ; e-mail validation→profil→persistance→déconnexion ; Google stub ; profil persisté ; Bibliothèque→votre espace via le vrai routeur). 20 tests au total, tous verts, build debug OK.
+  - **Apprentissage tests** : `pumpAndSettle` seul ne déclenche PAS les `Future.delayed` du fake qui n'engendrent pas de frame → pattern `settleAll` (8×`pump(300 ms)` + settle), déjà utilisé dans app_test, généralisé aux tests routés.
+
 ## En cours
-- (rien — étape 5 terminée, en attente d'étape 6)
+- (rien — étape 6 terminée, en attente d'étape 7)
 
 ## Reste
-- Étape 6 — Comptes : lazy registration (e-mail/Google/Apple stubs), profil, déconnexion.
 - Étape 7 — Freemium : gating 1 avis presse + 2 web (flouté au-delà), 3 jetons IA/mois, Premium 2 €/mois, Radar à économies, MatchMaker, paywall.
 - Étape 8 — Finitions : onboarding 3 écrans, icône + splash, accessibilité, tests widget des écrans clés, README.
 - Étape 9 — Livraison : `flutter build apk --release` (signature debug) → `dist/ela.apk` + commit final.

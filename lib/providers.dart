@@ -25,6 +25,7 @@ import 'data/services/moderation_service.dart';
 import 'data/services/payment_service.dart';
 import 'data/services/review_service.dart';
 import 'data/services/trend_service.dart';
+import 'features/account/account_screen.dart';
 import 'features/book_detail/book_detail_screen.dart';
 import 'features/home_shell.dart';
 import 'features/library/library_screen.dart';
@@ -108,6 +109,11 @@ final moderationServiceProvider = Provider<ModerationService>((ref) {
 
 final profileProvider = Provider<UserProfile>(
   (ref) => ref.watch(authServiceProvider).currentProfile(),
+);
+
+/// Profil réactif (se met à jour à la connexion / déconnexion).
+final profileStreamProvider = StreamProvider<UserProfile>(
+  (ref) => ref.watch(authServiceProvider).watchProfile(),
 );
 
 final entitlementProvider = FutureProvider<Entitlement>(
@@ -204,6 +210,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/livre/:isbn',
         builder: (context, state) =>
             BookDetailScreen(isbn: state.pathParameters['isbn']!),
+      ),
+      GoRoute(
+        path: '/compte',
+        builder: (context, state) => const AccountScreen(),
       ),
     ],
   );

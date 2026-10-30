@@ -9,7 +9,6 @@ import 'fake_delay.dart';
 class FakeAuthService implements AuthService {
   FakeAuthService(this._prefs) {
     _profile = _loadOrAnonymous();
-    _controller.add(_profile);
   }
 
   final SharedPreferences _prefs;
@@ -23,7 +22,12 @@ class FakeAuthService implements AuthService {
   UserProfile currentProfile() => _profile;
 
   @override
-  Stream<UserProfile> watchProfile() => _controller.stream;
+  Stream<UserProfile> watchProfile() => Stream.multi((controller) {
+        // Instantané initial : un abonnement tardif ne rate pas l'état.
+        controller.add(_profile);
+        final sub = _controller.stream.listen(controller.add);
+        controller.onCancel = sub.cancel;
+      });
 
   UserProfile _loadOrAnonymous() =>
       userProfileFromJsonString(_prefs.getString(_key)) ??

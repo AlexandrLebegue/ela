@@ -141,9 +141,8 @@ void main() {
     await tester.tap(find.text('Créer mon compte'));
     await settleAll(tester);
 
-    expect(
-      find.textContaining('La création de compte arrive très bientôt'),
-      findsOneWidget,
-    );
+    // La feuille se ferme et cède la place à l'écran de compte
+    // (navigation réelle testée dans account_test, app complète).
+    expect(find.textContaining('Votre avis mérite un nom'), findsNothing);
   });
 }
