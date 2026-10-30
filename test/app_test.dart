@@ -54,10 +54,8 @@ void main() {
 
     await tester.tap(find.text('Scanner').last);
     await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Le scan de code-barres arrive'),
-      findsOneWidget,
-    );
+    // La branche Scanner est construite (secours saisie manuelle visible).
+    expect(find.text('Ou saisissez un ISBN'), findsOneWidget);
 
     await tester.tap(find.text('Recherche').last);
     await settleAll(tester);

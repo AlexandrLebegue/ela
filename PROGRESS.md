@@ -20,9 +20,17 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - Écrans socle : Tendance (catégories + listes + squelettes), Scanner (halo lampe de chevet + saisie ISBN manuelle), Bibliothèque (Historique + PAL, persistance locale, état vide), Recherche (debounce, résultats), fiche livre (en-tête, badge, lecteurs, PAL/Acheter).
   - Tests : `test/app_test.dart` (barre 4 entrées + navigation).
   - Android : permission CAMERA + uses-feature non obligatoire, label « Ela ».
+- **Étape 2 — Scanner**
+  - Caméra `mobile_scanner` 7.4.2 (EAN-13, objectif arrière, démarrage différé hors tests) ; détection → arrêt caméra, **haptique battement de cœur**, couverture qui « lévite » (glisse + grandit + halo doré pulsé) 1,2 s puis ouverture de la fiche.
+  - Halo « lampe de chevet » (`_LampHaloOverlay`) : cadre doré arrondi qui respire, aucun laser rouge.
+  - États gérés : démarrage, scan, identifié, livre introuvable (retry), permission refusée (explication + retry), caméra indisponible.
+  - Saisie manuelle d'ISBN (13 chiffres) avec bouton « Chercher » + spinner ; sur écran sans caméra/permission refusée, le bloc saisie est mis en avant.
+  - Recherche ISBN : catalogue local 18 livres d'abord (cohérence avec la curation démo), sinon **API publique Google Books** (`lib/core/google_books_client.dart`, timeout 4–5 s, toute erreur → null) ; sinon « livre introuvable ».
+  - Détection test vs prod : `lib/core/flags.dart` → `isRunningUnderFlutterTest` = `Platform.environment['FLUTTER_TEST'] == 'true'` (`flutter test` définit une **variable d'env**, pas un `--dart-define` : `bool.fromEnvironment` ne la voit pas — vérifié empiriquement).
+  - Tests : `test/scanner_test.dart` (3 tests : dégradation sans caméra, ISBN connu → fiche, ISBN inconnu → avertissement) ; app_test adapté. 5 tests au total, tous verts.
 
 ## En cours
-- **Étape 2 — Scanner** : caméra `mobile_scanner` EAN-13/ISBN, halo doré, haptique battement de cœur à la détection, lévitation de la couverture avant ouverture de la fiche ; garde la saisie manuelle ; gestion propre du refus de la permission caméra.
+- (rien — étape 2 terminée, en attente d'étape 3)
 
 ## Reste
 - Étape 3 — Fiche livre : 3 onglets en fondu (Synthèse IA & Presse : synthèse + 5 avis ; Le Web : 15 avis ; La Communauté : illimité + ajout d’avis + Signaler), curation simulée avec texte qui respire.
@@ -37,5 +45,5 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
 - **Riverpod 3.3 / go_router 17** installés par Flutter 3.35 : API adaptées (`AsyncValue.when`, `Notifier` au lieu de `StateProvider` (passé en legacy dans riverpod 3), `StatefulShellRoute.indexedStack` + `currentIndex`/`goBranch(int)`, `MaterialApp.router(routerConfig:)`).
 - **Couvertures** : URL OpenLibrary `covers.openlibrary.org/b/id/<id>-M.jpg` (ISBN vérifiés via l’API) ; repli visuel élégant (dégradé sépia + initiale) si hors-ligne.
 - **Jetifier OFF** (voir Fait) : exigence RAM du conteneur.
-- **Google Books** : l’appel réel de l’API (recherche ISBN) sera branché à l’étape 2 avec repli sur le catalogue fake.
-- **Tests** : `GoogleFonts.config.allowRuntimeFetching = false` + horloge factice avancée à la main (les délais fake sont des `Future.delayed`).
+- **Google Books** : branché à l’étape 2 — `GoogleBooksClient.fetchByIsbn` (API publique sans clé, timeout 4–5 s, toute erreur → null) ; le catalogue local répond d’abord pour garder curation/avis cohérents.
+- **Tests** : `GoogleFonts.config.allowRuntimeFetching = false` + horloge factice avancée à la main (les délais fake sont des `Future.delayed`) ; jamais de réseau ni de caméra en test (garde `isRunningUnderFlutterTest` = variable d’env `FLUTTER_TEST`, **pas** un `--dart-define`).
