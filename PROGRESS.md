@@ -82,11 +82,15 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   - **README.md** : lancement (env.sh, run, build, tests), structure lib/, ce que fait l'app, branchement Firebase phase 2 (interfaces + flag `BACKEND`), notes (couvertures OpenLibrary, signature debug).
   - **Apprentissages** : `flutter test` + timers — toute fin de test avec un `Future.delayed`/`Timer` du fake non expiré échoue (`!timersPending`) ; le `settleAll` (8×300 ms) doit suivre **chaque** transition vers un écran qui déclenche des fakes ; fonction locale forward-reference interdite en Dart (déclarer `settleAll` avant `pumpApp`) ; un `sed` global sur `pumpAndSettle` peut casser le corps même de `settleAll` (recursion) ; `#!/usr/bin/env` ne peut être que ligne 1 sinon le parseur s'égare.
 
+- **Étape 9 — Livraison**
+  - `flutter clean` → `flutter build apk --release` → **`dist/ela.apk`** (67,7 Mo ; arm64-v8a + armeabi-v7a + x86_64) ; signature = **keystore debug** (vérifiée `apksigner` : CN=Android Debug) — valider un APK signé debug = sideloading/test ; un keystore de publication sera requis pour le Play Store. Gradle sans daemon (`org.gradle.daemon=false`).
+  - **Blocage rencontré** : 1ᵉʳ build en échec — les 3 jars engine `io.flutter` *release* du cache Gradle étaient corrompus (`ZipFile invalid LOC header (bad signature)`), téléchargés tronqués pendant que le stockage thin LVM de l'hôte Proxmox était plein à 100 % (invisible dans le `df` du conteneur — la cause n'était **pas** seccomp). Résolution : ~9 Go libérés (fstrim + caches npm/gradle) + suppression des 3 artefacts corrompus du cache `~/.gradle` → re-téléchargement propre → build OK, 29 tests verts de l'étape 8 toujours applicables (aucun code modifié depuis).
+
 ## En cours
-- (rien — étape 8 terminée, en attente d'étape 9)
+- (rien)
 
 ## Reste
-- Étape 9 — Livraison : `flutter build apk --release` (signature debug) → `dist/ela.apk` + commit final.
+- (rien — plan `PROMPT.md` terminé). Au-delà du plan : signature de production + publication Play Store ; branchement Firebase (phase 2, voir README).
 
 ## Décisions
 - **Riverpod 3.3 / go_router 17** installés par Flutter 3.35 : API adaptées (`AsyncValue.when` + `.value` (pas de `.valueOrNull`), `Notifier` au lieu de `StateProvider` (passé en legacy dans riverpod 3), `StatefulShellRoute.indexedStack` + `currentIndex`/`goBranch(int)`, `MaterialApp.router(routerConfig:)`, `BuildContext.mounted` disponible).
