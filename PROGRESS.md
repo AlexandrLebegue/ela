@@ -115,7 +115,14 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   async corrigées, formulaires accessibles, permission Internet release.
   Mi-parcours `ff19e7a` poussé avec 72 captures et réveil ProxBoss effectué.
   Audit A01–A16 traité. 158 tests verts (29 historiques, 120 scènes + contrôle
-  de configuration, 8 régressions). Analyse sans issue. Contrôle compact ×1,3
-  et régénération définitive des captures en cours avant livraison.
-- **Étapes 3 et 4** : à finaliser (planches, build web sans serveur, APK release
-  signé avec le certificat v0.1.0). Aucune release GitHub ne sera créée.
+  de configuration, 8 régressions). Analyse sans issue. 121 contrôles compacts ×1,3 verts et 120 captures finales régénérées.
+- **Étape 3 terminée** : 120 captures finales, planches jour/nuit de 60 scènes
+  et comparaison de six parcours. `flutter create --platforms web .` effectué,
+  plateformes Android/iOS conservées. Build web release dans `build/web`,
+  CanvasKit embarqué, scanner ISBN manuel. Chromium mobile sans serveur HTTP :
+  rendu, saisie ISBN, recherche et retour conservant la requête vérifiés ;
+  rapport et trois captures dans `docs/screens/web`. Analyse sans issue,
+  158 tests verts et 121 contrôles compacts verts. Aucun flutter_tester restant.
+- **Étape 4 en cours** : APK release avec certificat vérifié contre la release
+  GitHub `v0.1.0` (SHA-256 : 805647876be2375c1aedf9004993b58b9cfa6a5a3400e07c8c03846aaf414d6a).
+  Aucune release GitHub ne sera créée.

@@ -1,7 +1,7 @@
 # Ela
 
-Compagnon de lecture mobile — **Flutter** (Android + iOS), thème « cocooning »
-papier/sépia/or. Phase 1 : **backend 100 % simulé** (fakes déterministes,
+Compagnon de lecture mobile — **Flutter** (Android + iOS + web), interface littéraire
+papier crème, reliure bordeaux et lecture de nuit. Phase 1 : **backend 100 % simulé** (fakes déterministes,
 zéro compte, zéro réseau pour le cœur) ; phase 2 : Firebase (voir ci-dessous).
 
 ## Lancer
@@ -19,8 +19,8 @@ flutter build apk --debug      # → build/app/outputs/flutter-apk/app-debug.apk
 ### Tests
 
 ```bash
-flutter test                   # 29 tests (app, scanner, fiche, bibliothèque,
-                               # tendance/recherche, compte, freemium, onboarding)
+flutter test --concurrency=1   # 158 tests : 29 historiques + 120 scènes
+                               # + configuration du banc + 8 régressions
 flutter analyze                # zéro issue
 ```
 
@@ -52,6 +52,39 @@ variable d'env `FLUTTER_TEST` (`lib/core/flags.dart`).
   accessibilité (contrastes, labels semantics, tailles de texte), icône
   Ela (adaptive icon + mipmaps générées par `tools/gen_launcher_icon.dart`).
 
+
+## Refonte « livre » et livrables visuels
+
+[Avant / après](docs/screens/avant-apres.png) ·
+[Planche jour](docs/screens/planche-jour.png) ·
+[Planche nuit](docs/screens/planche-nuit.png) ·
+[Audit et corrections](docs/AUDIT-UI.md) · [Direction artistique](docs/DESIGN.md)
+
+72 captures avant et 120 après, avec vraies polices et icônes, à 412 × 915 dp
+(ratio 2,625). La matrice complète passe aussi à 360 × 640 et texte ×1,3.
+Le [banc de captures](docs/screens/README.md) documente les commandes, fixtures
+et limites. Les paiements, comptes sociaux, prix et données de démo restent
+simulés. Les fonctions existantes sont conservées ; la bibliothèque dispose
+également d'une vue étagère. Le thème jour/nuit est mémorisé.
+
+```bash
+source scripts/env.sh
+flutter build web --release --no-web-resources-cdn   # build/web
+flutter build apk --release                        # build/app/outputs/flutter-apk/app-release.apk
+```
+
+`build/web` est prêt à être servi par ProxBoss, à la racine d'un hôte web.
+Aucun serveur n'est lancé par la procédure de livraison. Sur navigateur,
+le scanner propose la saisie ISBN ; exemple : `9782070667918`.
+Les ressources CanvasKit et les polices sont incluses dans le build ; les
+couvertures distantes et Google Books restent des améliorations réseau.
+L'APK livré est `dist/ela.apk`, avec la même signature que `v0.1.0`.
+La publication GitHub reste à ProxBoss après validation visuelle.
+
+Une seule commande Flutter lourde à la fois sur la machine partagée ;
+Gradle sans daemon. Après les tests : `pgrep -x flutter_tester` doit être vide.
+La caméra et la fluidité sur appareil physique restent à vérifier sur téléphone.
+
 ## Structure
 
 ```
@@ -60,7 +93,8 @@ lib/
   app.dart                   — splash → onboarding (1ʳᵉ fois) → routeur
   providers.dart             — DI Riverpod : services, routes, flag BACKEND
   core/
-    theme.dart               — couleurs/typo « cocooning » (Lora + Nunito Sans)
+    design/                  — tokens, papier, ex-libris, cartes et rubans
+    theme.dart               — Cormorant Garamond / Literata / Nunito Sans locales
     animations.dart          — BreathingText, squelettes, StaggeredReveal…
     haptics.dart             — « battement de cœur »
     flags.dart               — détection flutter test (variable d'env)
@@ -76,7 +110,7 @@ lib/
     trending/ scanner/ library/ search/ book_detail/
     account/ premium/ (paywall, radar, matchmaker)
     onboarding/ splash/ home_shell.dart
-test/                        — 8 fichiers, 29 tests widget
+test/                        — tests métier, captures et régressions UI
 tools/gen_launcher_icon.dart — génère les mipmaps ic_launcher (pur Dart)
 scripts/env.sh               — environnement de build
 docs/                        — REQUIREMENTS, STACK, ARCHITECTURE
@@ -106,6 +140,7 @@ flutter run --dart-define=BACKEND=firebase
 
 ## Notes
 
+- Polices : OFL embarquées sous `assets/fonts/`, aucun chargement Google Fonts.
 - Couvertures : OpenLibrary (`covers.openlibrary.org`), avec repli visuel
   élégant hors-ligne (dégradé sépia + initiale).
 - Prix d'occasion du Radar : fictifs (catalogue démo).

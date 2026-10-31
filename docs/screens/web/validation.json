@@ -1,0 +1,21 @@
+{
+  "browser": "156.0.8078.4",
+  "viewport": {
+    "width": 412,
+    "height": 915
+  },
+  "devicePixelRatio": 2.625,
+  "localAssets": 42,
+  "serverStarted": false,
+  "network": "blocked; real offline cover fallback",
+  "checks": [
+    "release starts",
+    "trending",
+    "manual ISBN opens book",
+    "back to scanner",
+    "search Camus",
+    "book then back preserves query",
+    "semantic navigation labels and chapter heading"
+  ],
+  "pageErrors": []
+}

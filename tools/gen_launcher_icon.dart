@@ -15,6 +15,11 @@ const _page = [255, 252, 245, 255];
 
 void main() {
   final targets = {
+    'web/favicon.png': 32,
+    'web/icons/Icon-192.png': 192,
+    'web/icons/Icon-512.png': 512,
+    'web/icons/Icon-maskable-192.png': 192,
+    'web/icons/Icon-maskable-512.png': 512,
     'android/app/src/main/res/mipmap-mdpi/ic_launcher.png': 48,
     'android/app/src/main/res/mipmap-hdpi/ic_launcher.png': 72,
     'android/app/src/main/res/mipmap-xhdpi/ic_launcher.png': 96,
