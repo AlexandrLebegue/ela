@@ -19,7 +19,7 @@ flutter build apk --debug      # → build/app/outputs/flutter-apk/app-debug.apk
 ### Tests
 
 ```bash
-flutter test --concurrency=1   # 169 tests, dont le carrousel et 4 goldens
+flutter test --concurrency=1   # 196 tests, dont le carrousel et 6 goldens
 flutter analyze                # zéro issue
 ```
 
@@ -32,9 +32,15 @@ variable d'env `FLUTTER_TEST` (`lib/core/flags.dart`).
   défilement auto avec pause et réduction des animations, transition Hero vers
   la fiche, ajout rapide PAL et rayons horizontaux (top 10, classiques, courts).
   Filtres par catégorie, jour/nuit et repli illustré hors ligne.
-- **Scanner** — EAN-13 (`mobile_scanner`) avec halo « lampe de chevet »,
-  dégradation propre sans caméra/permission, saisie ISBN manuelle ;
+- **Scanner** — EAN-13 ISBN (`mobile_scanner`) avec viseur neutre plein écran,
+  dégradation propre sans caméra/permission, saisie ISBN en feuille basse ;
   l'ISBN connu ouvre la fiche, l'inconnu est averti.
+- **Notation** — demi-étoiles de 0,5 à 5, moyenne communauté, histogramme,
+  note personnelle persistée et avis avec texte optionnel ; tri en bibliothèque
+  et rayon « Les mieux notés » sur Tendance.
+- **Marché** — comparateur neuf/occasion de huit enseignes, total avec port,
+  tri par prix ou état, annonces entre lecteurs filtrées par ville, vente
+  depuis la bibliothèque et Radar Premium intégré (données simulées).
 - **Fiche livre** — couverture, badge de popularité, lecteurs d'Ela,
   synthèse IA + 5 avis presse, 15 avis web, avis communauté (ajout,
   signalement), PAL / Acheter (lien affilié simulé).
@@ -113,7 +119,7 @@ lib/
                                déterministes, bibliothèque, entitlement…
     firebase/README.md       — ce qui arrive en phase 2 (schéma, fichiers)
   features/
-    trending/ scanner/ library/ search/ book_detail/
+    trending/ scanner/ library/ search/ book_detail/ ratings/ market/
     account/ premium/ (paywall, radar, matchmaker)
     onboarding/ splash/ home_shell.dart
 test/                        — tests métier, captures et régressions UI
@@ -122,9 +128,12 @@ scripts/env.sh               — environnement de build
 docs/                        — REQUIREMENTS, STACK, ARCHITECTURE
 ```
 
-Navigation : `go_router` `StatefulShellRoute.indexedStack` — 4 branches
-(Tendance / Scanner / Bibliothèque / Recherche) + routes hors shell
-`/livre/:isbn`, `/compte`, `/premium`, `/radar`, `/match`.
+Navigation : `go_router` `StatefulShellRoute.indexedStack` — 5 branches
+(Tendance / Scanner / Bibliothèque / Recherche / Marché) + routes hors shell
+`/livre/:isbn`, `/annonce/:id`, `/compte`, `/premium`, `/match`.
+`/marche?isbn=…` ouvre le comparateur ; `/radar` redirige vers
+`/marche?vue=radar`. Les [captures v2](docs/screens/v2/README.md) documentent
+la notation, le Marché et le scanner, en jour/nuit et au format compact.
 
 ## Brancher Firebase (phase 2)
 

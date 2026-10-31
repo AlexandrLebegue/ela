@@ -1,0 +1,18 @@
+- text: CHAPITRE V · ELA
+- button "Votre espace"
+- heading "Marché" [level=2]
+- text: Les livres passent. Les histoires restent.
+- button "Les bonnes affaires"
+- button "Radar · Premium"
+- group:
+  - textbox "Chercher un livre ou un auteur"
+  - text: Prix et annonces de démonstration · retrait ou livraison selon l’offre. Bonnes affaires du moment
+  - button "Couverture de Le Petit Prince Le Petit Prince Antoine de Saint-Exupéry Note 4,1 · 258 Occasion dès 3,90 € · comparer les offres 4,1 sur 5"
+  - button "Couverture de L’Étranger L’Étranger Albert Camus Note 4,1 · 290 Occasion dès 3,10 € · comparer les offres 4,1 sur 5"
+  - button "Couverture de Les Misérables Les Misérables Victor Hugo Note 4,0 · 576 Occasion dès 5,30 € · comparer les offres 4,0 sur 5"
+  - text: Annonces entre lecteurs
+- button "Tendance"
+- button "Scanner"
+- button "Bibliothèque"
+- button "Recherche"
+- button "Marché"

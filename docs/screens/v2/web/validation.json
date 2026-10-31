@@ -1,0 +1,30 @@
+{
+  "url": "http://127.0.0.1:8240/",
+  "browser": "156.0.8078.4",
+  "serverStarted": false,
+  "viewport": {
+    "width": 412,
+    "height": 915
+  },
+  "compact": {
+    "width": 360,
+    "height": 640
+  },
+  "pixelRatio": 2,
+  "network": "Local assets over HTTP; covers blocked only in this test to exercise the existing offline fallback",
+  "checks": [
+    "five navigation entries including Marché",
+    "community rating summary and editor",
+    "market home",
+    "comparison filters",
+    "affiliate offer",
+    "reader listing and simulated contact",
+    "integrated Premium Radar",
+    "manual ISBN opens the right book",
+    "search with stars",
+    "persisted night theme",
+    "compact market",
+    "accessible semantics"
+  ],
+  "pageErrors": []
+}

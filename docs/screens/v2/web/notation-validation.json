@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:8240/",
+  "browser": "156.0.8078.4",
+  "checks": [
+    "accessible keyboard half-stars",
+    "persisted rating 4.5",
+    "edited rating 3.5",
+    "deleted own rating"
+  ],
+  "pageErrors": []
+}
