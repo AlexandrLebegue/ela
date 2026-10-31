@@ -160,3 +160,7 @@ flutter run --dart-define=BACKEND=firebase
   élégant hors-ligne (dégradé sépia + initiale).
 - Prix d'occasion du Radar : fictifs (catalogue démo).
 - Signature release : clés debug pour l'instant (`android/app/build.gradle.kts`).
+
+## iPhone
+
+IPA non signée produite par GitHub Actions (workflow iOS), jointe aux releases. Installation avec Sideloadly : voir [docs/IPHONE.md](docs/IPHONE.md).
