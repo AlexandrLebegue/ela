@@ -13,7 +13,8 @@ import 'premium_screen.dart';
 /// Radar à économies (Premium) : les meilleures occasions du catalogue,
 /// prix d'occasion fictifs.
 class RadarScreen extends ConsumerWidget {
-  const RadarScreen({super.key});
+  const RadarScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,21 +22,24 @@ class RadarScreen extends ConsumerWidget {
     final entitlement = ref.watch(entitlementStreamProvider).value;
     if (entitlement == null) {
       final failed = ref.watch(entitlementStreamProvider).hasError;
-      return BookScaffold(
-        appBar: BookAppBar(title: const Text('Radar à économies')),
-        body: BookNotice(
-          title: failed
-              ? 'Cette page est momentanément indisponible'
-              : 'Ouverture de votre édition…',
-          loading: !failed,
-          action: failed
-              ? OutlinedButton(
-                  onPressed: () => ref.invalidate(entitlementStreamProvider),
-                  child: const Text('Réessayer'),
-                )
-              : null,
-        ),
+      final notice = BookNotice(
+        title: failed
+            ? 'Cette page est momentanément indisponible'
+            : 'Ouverture de votre édition…',
+        loading: !failed,
+        action: failed
+            ? OutlinedButton(
+                onPressed: () => ref.invalidate(entitlementStreamProvider),
+                child: const Text('Réessayer'),
+              )
+            : null,
       );
+      return embedded
+          ? notice
+          : BookScaffold(
+              appBar: BookAppBar(title: const Text('Radar à économies')),
+              body: notice,
+            );
     }
 
     // Top 6 par taux de remise (prix d'occasion fictif / prix neuf).
@@ -46,58 +50,61 @@ class RadarScreen extends ConsumerWidget {
           ..sort((a, b) => _discount(b)!.compareTo(_discount(a)!));
     final top = deals.take(6).toList();
 
-    return BookScaffold(
-      backgroundColor: scheme.surface,
-      appBar: BookAppBar(title: const Text('Radar à économies')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          ElaSize.v24,
-          ElaSize.v8,
-          ElaSize.v24,
-          ElaSize.v32,
+    final content = ListView(
+      padding: const EdgeInsets.fromLTRB(
+        ElaSize.v24,
+        ElaSize.v8,
+        ElaSize.v24,
+        ElaSize.v32,
+      ),
+      children: [
+        const ChapterHeader(
+          chapter: 'VI',
+          title: 'Le Radar',
+          subtitle: 'De belles lectures, à prix doux.',
         ),
-        children: [
-          const ChapterHeader(
-            chapter: 'VI',
-            title: 'Le Radar',
-            subtitle: 'De belles lectures, à prix doux.',
-          ),
+        Text(
+          'Prix d’occasion fictifs · catalogue de démonstration',
+          style: Theme.of(context).textTheme.labelSmall,
+        ),
+        const SizedBox(height: ElaSize.v16),
+        if (!entitlement.isPremium) ...[
           Text(
-            'Prix d’occasion fictifs · catalogue de démonstration',
-            style: Theme.of(context).textTheme.labelSmall,
+            'L’essentiel du Radar vous est montré.',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: ElaSize.v8),
+          const Text(
+            'Premium ouvre les six meilleures occasions, classées par remise.',
           ),
           const SizedBox(height: ElaSize.v16),
-          if (!entitlement.isPremium) ...[
-            Text(
-              'L’essentiel du Radar vous est montré.',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: ElaSize.v8),
-            const Text(
-              'Premium ouvre les six meilleures occasions, classées par remise.',
-            ),
-            const SizedBox(height: ElaSize.v16),
-          ],
-          for (var i = 0; i < top.length; i++)
-            if (entitlement.isPremium || i == 0)
-              _DealRow(
-                book: top[i],
-                discount: _discount(top[i])!,
-                onTap: () => context.push('/livre/${top[i].isbn}'),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.only(bottom: ElaSize.v12),
-                child: _LockedDealRow(book: top[i]),
-              ),
-          if (!entitlement.isPremium)
-            const PremiumUnlockCard(
-              message: 'Découvrez les six meilleures occasions du catalogue.',
-            ),
-          const Folio('06'),
         ],
-      ),
+        for (var i = 0; i < top.length; i++)
+          if (entitlement.isPremium || i == 0)
+            _DealRow(
+              book: top[i],
+              discount: _discount(top[i])!,
+              onTap: () => context.push('/marche?isbn=${top[i].isbn}'),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: ElaSize.v12),
+              child: _LockedDealRow(book: top[i]),
+            ),
+        if (!entitlement.isPremium)
+          const PremiumUnlockCard(
+            message: 'Découvrez les six meilleures occasions du catalogue.',
+          ),
+        const Folio('06'),
+      ],
     );
+    return embedded
+        ? content
+        : BookScaffold(
+            backgroundColor: scheme.surface,
+            appBar: BookAppBar(title: const Text('Radar à économies')),
+            body: content,
+          );
   }
 
   static double? _discount(Book b) {

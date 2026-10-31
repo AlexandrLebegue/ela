@@ -1,3 +1,4 @@
+import '../market/market_screen.dart';
 import '../ratings/rating_widgets.dart';
 import '../../core/widgets/rating_stars.dart';
 import 'package:flutter/material.dart';
@@ -96,13 +97,10 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
     return Rect.fromLTWH(o.dx, o.dy, box.size.width, box.size.height);
   }
 
-  /// Position approx. de l'icône Bibliothèque dans la barre (3e bouton/4).
+  /// Position approx. de l'icône Bibliothèque dans la barre (3e bouton/5).
   Rect _libraryTargetRect() {
     final size = MediaQuery.of(context).size;
-    final center = Offset(
-      size.width * ElaSize.v0_625,
-      size.height - ElaSize.v44,
-    );
+    final center = Offset(size.width * .5, size.height - ElaSize.v44);
     return Rect.fromCenter(
       center: center,
       width: ElaSize.v34,
@@ -248,6 +246,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
               onPurchase: () => _purchase(book),
               coverKey: _coverKey,
             ),
+            WhereToBuy(isbn: book.isbn),
             _TabBar(
               current: _tab,
               onSelected: (t) {

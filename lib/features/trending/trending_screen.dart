@@ -295,7 +295,7 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
                             runSpacing: 8,
                             children: [
                               OutlinedButton.icon(
-                                onPressed: () => context.push('/radar'),
+                                onPressed: () => context.go('/marche?vue=radar'),
                                 icon: const Icon(Icons.sell_outlined, size: 18),
                                 label: const Text('Radar · à prix doux'),
                               ),

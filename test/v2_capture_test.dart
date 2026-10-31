@@ -29,6 +29,10 @@ void main() {
       'widget-notation',
       'tendance-etoiles',
       'scanner-avant',
+      'marche-accueil',
+      'marche-comparateur',
+      'marche-annonce',
+      'marche-radar',
     ]) {
       testWidgets('v2 $scene ${dark ? 'nuit' : 'jour'}', (t) async {
         t.view.physicalSize = _compact
@@ -57,7 +61,15 @@ void main() {
         c
             .read(routerProvider)
             .go(
-              scene == 'tendance-etoiles'
+              scene == 'marche-accueil'
+                  ? '/marche'
+                  : scene == 'marche-comparateur'
+                  ? '/marche?isbn=$_isbn'
+                  : scene == 'marche-annonce'
+                  ? '/annonce/demo-0'
+                  : scene == 'marche-radar'
+                  ? '/marche?vue=radar'
+                  : scene == 'tendance-etoiles'
                   ? '/tendance'
                   : scene.startsWith('scanner')
                   ? '/scanner'

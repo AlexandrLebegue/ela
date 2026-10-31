@@ -12,12 +12,19 @@ class HomeShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final receiving = ref.watch(flyToLibraryProvider).receiving;
-    const labels = ['Tendance', 'Scanner', 'Bibliothèque', 'Recherche'];
+    const labels = [
+      'Tendance',
+      'Scanner',
+      'Bibliothèque',
+      'Recherche',
+      'Marché',
+    ];
     const icons = [
       Icons.menu_book_outlined,
       Icons.qr_code_scanner,
       Icons.auto_stories_outlined,
       Icons.search,
+      Icons.storefront_outlined,
     ];
     return BookScaffold(
       body: navigationShell,

@@ -1,3 +1,7 @@
+import 'data/fake/fake_market_service.dart';
+import 'data/models/market.dart';
+import 'data/services/market_service.dart';
+import 'features/market/market_screen.dart';
 import 'data/fake/fake_rating_service.dart';
 import 'data/services/rating_service.dart';
 import 'data/models/rating.dart';
@@ -32,7 +36,6 @@ import 'features/account/account_screen.dart';
 import 'features/book_detail/book_detail_screen.dart';
 import 'features/premium/matchmaker_screen.dart';
 import 'features/premium/premium_screen.dart';
-import 'features/premium/radar_screen.dart';
 import 'features/home_shell.dart';
 import 'features/library/library_screen.dart';
 import 'features/scanner/scanner_screen.dart';
@@ -236,7 +239,7 @@ final onboardedProvider = NotifierProvider<OnboardedNotifier, bool>(
   OnboardedNotifier.new,
 );
 
-/// Shell à 4 branches : Tendance / Scanner / Bibliothèque / Recherche.
+/// Shell à 5 branches : Tendance / Scanner / Bibliothèque / Recherche / Marché.
 /// Le détail livre est hors shell (pas de bottom bar).
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -278,7 +281,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/marche',
+                builder: (context, state) => MarketScreen(
+                  isbn: state.uri.queryParameters['isbn'],
+                  radar: state.uri.queryParameters['vue'] == 'radar',
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+      GoRoute(
+        path: '/annonce/:id',
+        builder: (context, state) =>
+            ListingScreen(id: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/livre/:isbn',
@@ -295,7 +314,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/premium',
         builder: (context, state) => const PremiumScreen(),
       ),
-      GoRoute(path: '/radar', builder: (context, state) => const RadarScreen()),
+      GoRoute(
+        path: '/radar',
+        redirect: (context, state) => '/marche?vue=radar',
+      ),
       GoRoute(
         path: '/match',
         builder: (context, state) => const MatchMakerScreen(),
@@ -332,3 +354,16 @@ final personalRatingProvider = Provider.family<double?, String>((ref, isbn) {
       .firstOrNull
       ?.value;
 });
+
+final marketServiceProvider = Provider<MarketService>((ref) {
+  if (kBackend == 'firebase') {
+    throw UnimplementedError('Firebase market — voir data/firebase/README.md');
+  }
+  return FakeMarketService(ref.watch(sharedPreferencesProvider));
+});
+final marketListingsProvider = StreamProvider<List<ReaderListing>>(
+  (ref) => ref.watch(marketServiceProvider).watchListings(),
+);
+final bookOffersProvider = FutureProvider.family<List<BookOffer>, String>(
+  (ref, isbn) => ref.watch(marketServiceProvider).offers(isbn),
+);

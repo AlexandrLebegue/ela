@@ -1,3 +1,4 @@
+import '../market/market_screen.dart';
 import '../ratings/rating_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -217,6 +218,11 @@ class _LibraryBook extends ConsumerWidget {
           spacing: 8,
           children: [
             TextButton.icon(
+              onPressed: () => showSellSheet(context, entry.isbn),
+              icon: const Icon(Icons.sell_outlined, size: 16),
+              label: const Text('Vendre'),
+            ),
+            TextButton.icon(
               onPressed: () async {
                 try {
                   await ref.read(libraryServiceProvider).addHistory(entry.isbn);
@@ -264,6 +270,10 @@ class _LibraryBook extends ConsumerWidget {
           TextButton(
             onPressed: () => showRatingSheet(context, entry.isbn),
             child: const Text('Noter'),
+          ),
+          TextButton(
+            onPressed: () => showSellSheet(context, entry.isbn),
+            child: const Text('Vendre'),
           ),
         ],
       ),

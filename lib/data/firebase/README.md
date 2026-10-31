@@ -37,3 +37,17 @@ le texte et le titre sont optionnels. Les notes presse/web sont normalisées
 sur 5 seulement si la source fournit une note. Les anciennes données sans
 note restent lisibles. Le fake conserve les notes et avis personnels dans
 SharedPreferences et génère des votes de démonstration déterministes.
+
+## Marché (v2)
+
+`MarketService.offers(isbn)` fournit les offres (enseigne, prix, port, état).
+Les prix sont explicitement simulés ; le tri compare le total, puis l’état
+si ce choix est activé. `PaymentService.affiliatePurchaseLink` reste le point
+d’entrée des liens affiliés, avec l’enseigne dans les paramètres.
+`market/listings/{id}` pourra stocker les champs de `ReaderListing` ;
+`watchListings`, `publish` et `contact` isolent le backend. L’UI filtre les
+annonces par ville choisie, sans géolocalisation. La photo optionnelle est
+une URL HTTPS, à remplacer par un upload Storage lors du branchement réel.
+Le fake persiste les annonces sur l’appareil ; le contact est simulé et
+n’envoie aucun message. Le Radar Premium est une vue du Marché ; `/radar`
+redirige vers `/marche?vue=radar` pour conserver les anciens accès.
