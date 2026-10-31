@@ -284,7 +284,11 @@ void main() {
       final flight = find.byWidgetPredicate(
         (w) => w is BookCover && w.book.isbn == book.isbn,
       );
-      expect(flight, findsWidgets);
+      expect(flight, findsOneWidget);
+      expect(
+        find.ancestor(of: flight, matching: find.byType(Hero)),
+        findsNothing,
+      );
       expect(find.byType(BookDetailScreen), findsOneWidget);
       expect(
         t.widget<BookDetailScreen>(find.byType(BookDetailScreen)).heroTag,
