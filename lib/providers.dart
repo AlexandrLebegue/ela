@@ -42,14 +42,16 @@ import 'features/trending/trending_screen.dart';
 const String kBackend = String.fromEnvironment('BACKEND', defaultValue: 'fake');
 
 final sharedPreferencesProvider = Provider<SharedPreferences>(
-  (ref) =>
-      throw UnimplementedError(' sharedPreferencesProvider doit être surchargé dans main()'),
+  (ref) => throw UnimplementedError(
+    ' sharedPreferencesProvider doit être surchargé dans main()',
+  ),
 );
 
 final authServiceProvider = Provider<AuthService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakeAuthService(ref.watch(sharedPreferencesProvider));
 });
@@ -57,7 +59,8 @@ final authServiceProvider = Provider<AuthService>((ref) {
 final bookLookupServiceProvider = Provider<BookLookupService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakeBookLookupService();
 });
@@ -65,7 +68,8 @@ final bookLookupServiceProvider = Provider<BookLookupService>((ref) {
 final curationServiceProvider = Provider<CurationService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakeCurationService();
 });
@@ -73,7 +77,8 @@ final curationServiceProvider = Provider<CurationService>((ref) {
 final reviewServiceProvider = Provider<ReviewService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakeReviewService();
 });
@@ -81,7 +86,8 @@ final reviewServiceProvider = Provider<ReviewService>((ref) {
 final libraryServiceProvider = Provider<LibraryService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakeLibraryService(ref.watch(sharedPreferencesProvider));
 });
@@ -89,7 +95,8 @@ final libraryServiceProvider = Provider<LibraryService>((ref) {
 final paymentServiceProvider = Provider<PaymentService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakePaymentService(ref.watch(sharedPreferencesProvider));
 });
@@ -97,7 +104,8 @@ final paymentServiceProvider = Provider<PaymentService>((ref) {
 final trendServiceProvider = Provider<TrendService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakeTrendService();
 });
@@ -105,13 +113,16 @@ final trendServiceProvider = Provider<TrendService>((ref) {
 final moderationServiceProvider = Provider<ModerationService>((ref) {
   if (kBackend == 'firebase') {
     throw UnimplementedError(
-        'Firebase (phase 2) — voir lib/data/firebase/README.md');
+      'Firebase (phase 2) — voir lib/data/firebase/README.md',
+    );
   }
   return FakeModerationService();
 });
 
 final profileProvider = Provider<UserProfile>(
-  (ref) => ref.watch(authServiceProvider).currentProfile(),
+  (ref) =>
+      ref.watch(profileStreamProvider).value ??
+      ref.watch(authServiceProvider).currentProfile(),
 );
 
 /// Profil réactif (se met à jour à la connexion / déconnexion).
@@ -133,16 +144,15 @@ class _UnlockedBooksNotifier extends Notifier<Set<String>> {
   @override
   Set<String> build() => const {};
 
-  void unlock(String isbn) =>
-      state = {...state, isbn};
+  void unlock(String isbn) => state = {...state, isbn};
 
   void lockAll() => state = const {};
 }
 
 final unlockedBooksProvider =
     NotifierProvider<_UnlockedBooksNotifier, Set<String>>(
-  _UnlockedBooksNotifier.new,
-);
+      _UnlockedBooksNotifier.new,
+    );
 
 /// Livre par ISBN (catalogue local, sinon API Google Books).
 final bookByIsbnProvider = FutureProvider.family<Book?, String>(
@@ -164,8 +174,10 @@ final libraryEntriesProvider = StreamProvider<List<LibraryEntry>>(
   (ref) => ref.watch(libraryServiceProvider).watchEntries(),
 );
 
-final trendingProvider =
-    FutureProvider.family<List<Book>, String?>((ref, category) {
+final trendingProvider = FutureProvider.family<List<Book>, String?>((
+  ref,
+  category,
+) {
   return ref.watch(trendServiceProvider).trending(category: category);
 });
 
@@ -175,16 +187,34 @@ final categoriesProvider = FutureProvider<List<String>>(
 
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
-  ThemeMode build() => ThemeMode.system;
+  ThemeMode build() {
+    final saved = ref
+        .watch(sharedPreferencesProvider)
+        .getString('ela.themeMode');
+    return ThemeMode.values.firstWhere(
+      (m) => m.name == saved,
+      orElse: () => ThemeMode.system,
+    );
+  }
 
-  void set(ThemeMode mode) => state = mode;
+  void set(ThemeMode mode) {
+    state = mode;
+    ref.read(sharedPreferencesProvider).setString('ela.themeMode', mode.name);
+  }
 
-  void toggle() =>
-      state = state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+  void toggle() {
+    final dark =
+        state == ThemeMode.dark ||
+        (state == ThemeMode.system &&
+            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                Brightness.dark);
+    set(dark ? ThemeMode.light : ThemeMode.dark);
+  }
 }
 
-final themeModeProvider =
-    NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
+  ThemeModeNotifier.new,
+);
 
 /// Onboarding (3 écrans) : montré une seule fois, mémorisé dans les
 /// SharedPreferences (`ela.onboarded`).
@@ -199,13 +229,14 @@ class OnboardedNotifier extends Notifier<bool> {
   }
 }
 
-final onboardedProvider =
-    NotifierProvider<OnboardedNotifier, bool>(OnboardedNotifier.new);
+final onboardedProvider = NotifierProvider<OnboardedNotifier, bool>(
+  OnboardedNotifier.new,
+);
 
 /// Shell à 4 branches : Tendance / Scanner / Bibliothèque / Recherche.
 /// Le détail livre est hors shell (pas de bottom bar).
 final routerProvider = Provider<GoRouter>((ref) {
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/tendance',
     routes: [
       StatefulShellRoute.indexedStack(
@@ -259,14 +290,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/premium',
         builder: (context, state) => const PremiumScreen(),
       ),
-      GoRoute(
-        path: '/radar',
-        builder: (context, state) => const RadarScreen(),
-      ),
+      GoRoute(path: '/radar', builder: (context, state) => const RadarScreen()),
       GoRoute(
         path: '/match',
         builder: (context, state) => const MatchMakerScreen(),
       ),
     ],
   );
+  ref.onDispose(router.dispose);
+  return router;
 });

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="elaPaper">#F6EFE3</color>
-    <color name="elaNight">#0F1420</color>
-    <color name="elaGold">#C9974F</color>
+    <color name="elaPaper">#F8F4EB</color>
+    <color name="elaNight">#19262C</color>
+    <color name="elaGold">#703B43</color>
 </resources>

@@ -144,6 +144,8 @@ void main() {
 
     await tester.tap(find.text('La Communauté'));
     await settleAll(tester);
+    await tester.ensureVisible(find.text('Écrire un avis'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Écrire un avis'));
     await settleAll(tester);
 

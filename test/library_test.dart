@@ -59,20 +59,25 @@ void main() {
 
     expect(find.text('Ma Bibliothèque'), findsOneWidget);
     expect(find.text('Historique'), findsOneWidget);
-    expect(find.text('Pile à Lire'), findsOneWidget);
     expect(find.text('Passif'), findsOneWidget);
-    expect(find.text('Active'), findsOneWidget);
 
     // Historique : le plus récent d'abord.
     expect(find.text('Les Misérables'), findsOneWidget);
     expect(find.text('Le Petit Prince'), findsOneWidget);
-    expect(find.text('L’Étranger'), findsOneWidget);
 
     // L’ordre vertical : Les Misérables (historique récent) au-dessus de
     // Le Petit Prince.
     final mis = tester.getTopLeft(find.text('Les Misérables'));
     final prince = tester.getTopLeft(find.text('Le Petit Prince'));
     expect(mis.dy, lessThan(prince.dy));
+    await tester.scrollUntilVisible(
+      find.text('Pile à Lire'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Pile à Lire'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('L’Étranger'), findsOneWidget);
   });
 
   testWidgets('Le vol de couverture notifie la réception par la barre', (

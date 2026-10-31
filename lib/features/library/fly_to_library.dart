@@ -157,7 +157,7 @@ class _FlyToLibrarySheetState extends ConsumerState<FlyToLibrarySheet>
             final w = _lerp(req.from.width, req.to.width, t);
             final h = _lerp(req.from.height, req.to.height, t);
             return Transform.translate(
-              offset: Offset(cx - w / 2, cy - h / 2),
+              offset: Offset(cx - w / ElaSize.v2, cy - h / ElaSize.v2),
               child: SizedBox(
                 width: w,
                 height: h,
@@ -196,18 +196,21 @@ class _FlyingCover extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(ElaSize.v10),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [scheme.primaryContainer, scheme.secondaryContainer],
         ),
-        border: Border.all(color: core.withValues(alpha: 0.8), width: 1.5),
+        border: Border.all(
+          color: core.withValues(alpha: 0.8),
+          width: ElaSize.v1_5,
+        ),
         boxShadow: [
           BoxShadow(
             color: core.withValues(alpha: 0.55 * glow),
-            blurRadius: 24,
-            spreadRadius: 2,
+            blurRadius: ElaSize.v24,
+            spreadRadius: ElaSize.v2,
           ),
         ],
       ),
@@ -216,7 +219,7 @@ class _FlyingCover extends StatelessWidget {
           initial,
           style: TextStyle(
             fontFamily: ElaType.titleFamily,
-            fontSize: 22,
+            fontSize: ElaSize.v22,
             color: scheme.onPrimaryContainer,
             fontWeight: FontWeight.w600,
           ),

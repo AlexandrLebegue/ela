@@ -7,17 +7,17 @@
     android:viewportHeight="108">
     <!-- Disque doré (centre 54,54). -->
     <path
-        android:fillColor="#C9974F"
+        android:fillColor="@color/elaGold"
         android:pathData="M54,54m-30,0a30,30 0 1,1 60,0a30,30 0 1,1 -60,0" />
     <!-- Pages ouvertes : gauche / droite, reliure au centre. -->
     <path
-        android:fillColor="#FFFDF6"
+        android:fillColor="#FFFCF5"
         android:pathData="M37,40h15v28h-15z" />
     <path
-        android:fillColor="#FFFDF6"
+        android:fillColor="#FFFCF5"
         android:pathData="M56,40h15v28h-15z" />
     <!-- Reliure dorée. -->
     <path
-        android:fillColor="#C9974F"
+        android:fillColor="@color/elaGold"
         android:pathData="M52,40h4v28h-4z" />
 </vector>

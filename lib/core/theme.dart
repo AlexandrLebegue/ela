@@ -39,11 +39,13 @@ class ElaTheme {
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
     final body = base.textTheme.apply(
       fontFamily: ElaType.bodyFamily,
+      fontFamilyFallback: const ['NotoSymbols', 'NotoEmoji'],
       bodyColor: scheme.onSurface,
       displayColor: scheme.onSurface,
     );
     TextStyle title(double size) => TextStyle(
       fontFamily: ElaType.titleFamily,
+      fontFamilyFallback: const ['NotoSymbols', 'NotoEmoji'],
       fontSize: size,
       height: 1.12,
       fontWeight: FontWeight.w600,
@@ -51,6 +53,7 @@ class ElaTheme {
     );
     TextStyle label(double size) => TextStyle(
       fontFamily: ElaType.labelFamily,
+      fontFamilyFallback: const ['NotoSymbols', 'NotoEmoji'],
       fontSize: size,
       height: 1.35,
       fontWeight: FontWeight.w600,

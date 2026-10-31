@@ -77,7 +77,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.only(right: 16, top: 8),
+                padding: const EdgeInsets.only(
+                  right: ElaSize.v16,
+                  top: ElaSize.v8,
+                ),
                 child: TextButton(
                   onPressed: _finish,
                   child: const Text('Passer'),
@@ -93,7 +96,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+              padding: const EdgeInsets.fromLTRB(
+                ElaSize.v24,
+                ElaSize.v8,
+                ElaSize.v24,
+                ElaSize.v20,
+              ),
               child: Column(
                 children: [
                   // Points de progression.
@@ -102,11 +110,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: [
                       for (var i = 0; i < _items.length; i++)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: ElaSize.v4,
+                          ),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 220),
                             width: i == _page ? 20 : 8,
-                            height: 8,
+                            height: ElaSize.v8,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(
                                 ElaSpace.radius,
@@ -119,20 +129,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: ElaSize.v20),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton(
                           onPressed: _page == 0 ? null : () => _go(_page - 1),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: ElaSize.v14,
+                            ),
                             side: BorderSide(color: scheme.outlineVariant),
                           ),
                           child: const Text('Retour'),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: ElaSize.v12),
                       Expanded(
                         flex: 2,
                         child: FilledButton(
@@ -144,7 +156,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             }
                           },
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: ElaSize.v14,
+                            ),
                             backgroundColor: Theme.of(
                               context,
                             ).colorScheme.secondary,
@@ -200,26 +214,26 @@ class _OnboardCard extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(ElaSize.v24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'OUVRIR LE LIVRE',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    letterSpacing: 2,
+                    letterSpacing: ElaSize.v2,
                     color: scheme.primary,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: ElaSize.v24),
                 Bookplate(icon: item.icon),
-                const SizedBox(height: 32),
+                const SizedBox(height: ElaSize.v32),
                 Text(
                   item.title,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: ElaSize.v16),
                 Text(
                   item.body,
                   textAlign: TextAlign.center,

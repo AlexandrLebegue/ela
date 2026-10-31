@@ -24,7 +24,7 @@ void main() {
   }
 
   Future<void> settleAll(WidgetTester tester) async {
-    for (var i = 0; i < 8; i++) {
+    for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 300));
     }
     await tester.pumpAndSettle();
@@ -55,6 +55,8 @@ void main() {
     final isbnField = find.widgetWithText(TextField, '978…');
     await tester.enterText(isbnField, '9782070667918');
     await tester.pump();
+    await tester.ensureVisible(find.text('Chercher').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Chercher').last);
     await settleAll(tester);
 
@@ -74,6 +76,8 @@ void main() {
       '9999999999999',
     );
     await tester.pump();
+    await tester.ensureVisible(find.text('Chercher').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Chercher').last);
     await settleAll(tester);
 

@@ -10,7 +10,7 @@ class BreathingText extends StatefulWidget {
     this.text, {
     super.key,
     this.style,
-    this.minOpacity = 0.35,
+    this.minOpacity = 0.8,
     this.period = const Duration(milliseconds: 1800),
   });
 
@@ -35,6 +35,15 @@ class _BreathingTextState extends State<BreathingText>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+      _controller.value = 1;
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -43,7 +52,8 @@ class _BreathingTextState extends State<BreathingText>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final style = widget.style ??
+    final style =
+        widget.style ??
         TextStyle(
           color: scheme.onSurfaceVariant,
           fontSize: 15,
@@ -53,10 +63,7 @@ class _BreathingTextState extends State<BreathingText>
       opacity: Tween<double>(
         begin: widget.minOpacity,
         end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      )),
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
       child: Text(widget.text, style: style),
     );
   }
@@ -90,6 +97,15 @@ class _InkSkeletonBlockState extends State<InkSkeletonBlock>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+      _controller.value = 1;
+    }
   }
 
   @override
@@ -167,6 +183,15 @@ class _StaggeredRevealState extends State<StaggeredReveal>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _c.stop();
+      _c.value = 1;
+    }
+  }
+
+  @override
   void dispose() {
     _delay?.cancel();
     _c.dispose();
@@ -207,11 +232,11 @@ class SoftCrossFade extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
-        duration: duration,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: showSecond ? secondChild : firstChild,
-      );
+    duration: duration,
+    switchInCurve: Curves.easeOutCubic,
+    switchOutCurve: Curves.easeInCubic,
+    transitionBuilder: (child, animation) =>
+        FadeTransition(opacity: animation, child: child),
+    child: showSecond ? secondChild : firstChild,
+  );
 }

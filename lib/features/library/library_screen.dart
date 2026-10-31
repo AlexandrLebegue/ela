@@ -73,9 +73,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 else ...[
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: ElaSize.v24,
+                      ),
                       child: Wrap(
-                        spacing: 8,
+                        spacing: ElaSize.v8,
                         children: [
                           ChoiceChip(
                             label: const Text('Liste'),
@@ -98,11 +100,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     if (section.$1.isNotEmpty) ...[
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                          padding: const EdgeInsets.fromLTRB(
+                            ElaSize.v24,
+                            ElaSize.v24,
+                            ElaSize.v24,
+                            ElaSize.v12,
+                          ),
                           child: Wrap(
                             crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 12,
-                            runSpacing: 4,
+                            spacing: ElaSize.v12,
+                            runSpacing: ElaSize.v4,
                             children: [
                               Text(
                                 section.$2,
@@ -119,11 +126,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       ),
                       if (_shelf)
                         SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: ElaSize.v24,
+                          ),
                           sliver: SliverToBoxAdapter(
                             child: Wrap(
-                              spacing: 16,
-                              runSpacing: 24,
+                              spacing: ElaSize.v16,
+                              runSpacing: ElaSize.v24,
                               children: [
                                 for (final e in section.$1)
                                   SizedBox(
@@ -139,7 +148,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         )
                       else
                         SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: ElaSize.v24,
+                          ),
                           sliver: SliverList.builder(
                             itemCount: section.$1.length,
                             itemBuilder: (context, i) =>
@@ -194,8 +205,8 @@ class _LibraryBook extends ConsumerWidget {
             book: book,
             width: (MediaQuery.sizeOf(context).width - 80) / 3,
           ),
-          const SizedBox(height: 8),
-          const Divider(thickness: 3),
+          const SizedBox(height: ElaSize.v8),
+          const Divider(thickness: ElaSize.v3),
           Text(book.title, style: Theme.of(context).textTheme.titleSmall),
           Text(book.author, style: Theme.of(context).textTheme.labelSmall),
         ],

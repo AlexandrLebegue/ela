@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/theme.dart';
+import '../../core/widgets/book_cover.dart';
 import '../../data/fake/demo_books.dart';
 import '../../data/models/book.dart';
 import '../../providers.dart';
@@ -18,70 +19,84 @@ class RadarScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final entitlement = ref.watch(entitlementStreamProvider).value;
-    if (entitlement == null) return const SizedBox.shrink();
+    if (entitlement == null) {
+      final failed = ref.watch(entitlementStreamProvider).hasError;
+      return BookScaffold(
+        appBar: BookAppBar(title: const Text('Radar à économies')),
+        body: BookNotice(
+          title: failed
+              ? 'Cette page est momentanément indisponible'
+              : 'Ouverture de votre édition…',
+          loading: !failed,
+          action: failed
+              ? OutlinedButton(
+                  onPressed: () => ref.invalidate(entitlementStreamProvider),
+                  child: const Text('Réessayer'),
+                )
+              : null,
+        ),
+      );
+    }
 
     // Top 6 par taux de remise (prix d'occasion fictif / prix neuf).
-    final deals = DemoData.books
-        .where((b) => b.priceEur != null && b.usedPriceEur != null)
-        .toList()
-      ..sort((a, b) => _discount(b)!.compareTo(_discount(a)!));
+    final deals =
+        DemoData.books
+            .where((b) => b.priceEur != null && b.usedPriceEur != null)
+            .toList()
+          ..sort((a, b) => _discount(b)!.compareTo(_discount(a)!));
     final top = deals.take(6).toList();
 
-    return Scaffold(
+    return BookScaffold(
       backgroundColor: scheme.surface,
-      appBar: AppBar(title: const Text('Radar à économies')),
-      body: entitlement.isPremium
-          ? ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-              itemCount: top.length,
-              itemBuilder: (context, i) => _DealRow(
+      appBar: BookAppBar(title: const Text('Radar à économies')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          ElaSize.v24,
+          ElaSize.v8,
+          ElaSize.v24,
+          ElaSize.v32,
+        ),
+        children: [
+          const ChapterHeader(
+            chapter: 'VI',
+            title: 'Le Radar',
+            subtitle: 'De belles lectures, à prix doux.',
+          ),
+          Text(
+            'Prix d’occasion fictifs · catalogue de démonstration',
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+          const SizedBox(height: ElaSize.v16),
+          if (!entitlement.isPremium) ...[
+            Text(
+              'L’essentiel du Radar vous est montré.',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: ElaSize.v8),
+            const Text(
+              'Premium ouvre les six meilleures occasions, classées par remise.',
+            ),
+            const SizedBox(height: ElaSize.v16),
+          ],
+          for (var i = 0; i < top.length; i++)
+            if (entitlement.isPremium || i == 0)
+              _DealRow(
                 book: top[i],
                 discount: _discount(top[i])!,
-                onTap: () => context.go('/livre/${top[i].isbn}'),
+                onTap: () => context.push('/livre/${top[i].isbn}'),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(bottom: ElaSize.v12),
+                child: _LockedDealRow(book: top[i]),
               ),
-            )
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Text(
-                  'L’essentiel du Radar vous est montré.',
-                  style: TextStyle(
-                    fontFamily: 'Lora',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Premium ouvre le radar complet : les 6 meilleures '
-                  'occasions du moment, triées par remise, mises à jour '
-                  'chaque semaine.',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    height: 1.5,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _DealRow(
-                  book: top.first,
-                  discount: _discount(top.first)!,
-                  onTap: () => context.go('/livre/${top.first.isbn}'),
-                ),
-                for (var i = 1; i < top.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: _LockedDealRow(book: top[i]),
-                  ),
-                const SizedBox(height: 12),
-                PremiumUnlockCard(
-                  message: 'Les 6 meilleures occasions, la remise calculée '
-                      'sur les prix d’occasion fictifs du catalogue, et '
-                      'l’alerte quand une pépite passe sous votre budget.',
-                ),
-              ],
+          if (!entitlement.isPremium)
+            const PremiumUnlockCard(
+              message: 'Découvrez les six meilleures occasions du catalogue.',
             ),
+          const Folio('06'),
+        ],
+      ),
     );
   }
 
@@ -108,75 +123,80 @@ class _DealRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final pct = (discount * 100).round();
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+    return PageCard(
+      margin: const EdgeInsets.only(bottom: ElaSize.v10),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ElaSpace.radius),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(ElaSize.v12),
           child: Row(
             children: [
               _Cover(book: book),
-              const SizedBox(width: 12),
+              const SizedBox(width: ElaSize.v12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       book.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14.5,
+                        fontSize: ElaType.body,
                         fontWeight: FontWeight.w700,
                         color: scheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: ElaSize.v2),
                     Text(
                       book.author,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: ElaSize.v13,
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
+                    const SizedBox(height: ElaSize.v6),
+                    Wrap(
+                      spacing: ElaSize.v8,
+                      runSpacing: ElaSize.v8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           formatPrice(book.priceEur),
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: ElaSize.v13,
                             color: scheme.onSurfaceVariant,
                             decoration: TextDecoration.lineThrough,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: ElaSize.v8),
                         Text(
                           formatPrice(book.usedPriceEur),
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: ElaSize.v14,
                             fontWeight: FontWeight.w800,
-                            color: ElaColors.sepiaDeep,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: ElaSize.v8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: ElaSize.v7,
+                            vertical: ElaSize.v2,
+                          ),
                           decoration: BoxDecoration(
-                            color: ElaColors.gold.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(999),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondary.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(
+                              ElaSpace.radius,
+                            ),
                           ),
                           child: Text(
                             '−$pct %',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: ElaSize.v12,
                               fontWeight: FontWeight.w800,
-                              color: ElaColors.sepiaDeep,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
@@ -195,33 +215,10 @@ class _DealRow extends StatelessWidget {
 
 class _Cover extends StatelessWidget {
   const _Cover({required this.book});
-
   final Book book;
-
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 46,
-      height: 70,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: scheme.outline.withValues(alpha: 0.4)),
-      ),
-      child: Center(
-        child: Text(
-          book.title.substring(0, 1),
-          style: TextStyle(
-            fontFamily: 'Lora',
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      BookCover(book: book, width: ElaSize.v48);
 }
 
 class _LockedDealRow extends StatelessWidget {
@@ -233,34 +230,32 @@ class _LockedDealRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(ElaSize.v12),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ElaSpace.radius),
       ),
       child: Row(
         children: [
           _Cover(book: book),
-          const SizedBox(width: 12),
+          const SizedBox(width: ElaSize.v12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   book.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ElaSize.v14,
                     fontWeight: FontWeight.w700,
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: ElaSize.v4),
                 Text(
                   'Occasion floutée — Premium',
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: ElaSize.v12_5,
                     color: scheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
                   ),
@@ -268,7 +263,11 @@ class _LockedDealRow extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.lock_outline, size: 18, color: scheme.onSurfaceVariant),
+          Icon(
+            Icons.lock_outline,
+            size: ElaSize.v18,
+            color: scheme.onSurfaceVariant,
+          ),
         ],
       ),
     );

@@ -29,7 +29,10 @@ class HomeShell extends ConsumerWidget {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: ElaSize.v8,
+              vertical: ElaSize.v8,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -47,23 +50,25 @@ class HomeShell extends ConsumerWidget {
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 2,
-                            vertical: 4,
+                            horizontal: ElaSize.v2,
+                            vertical: ElaSize.v4,
                           ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AnimatedContainer(
                                 duration: ElaMotion.detail,
-                                width: 48,
-                                height: 48,
+                                width: ElaSize.v48,
+                                height: ElaSize.v48,
                                 decoration: BoxDecoration(
                                   color: i == 1
                                       ? scheme.primary
                                       : (i == 2 && receiving
                                             ? scheme.primaryContainer
-                                            : Colors.transparent),
-                                  borderRadius: BorderRadius.circular(4),
+                                            : ElaColors.transparent),
+                                  borderRadius: BorderRadius.circular(
+                                    ElaSize.v4,
+                                  ),
                                 ),
                                 child: Icon(
                                   icons[i],
@@ -72,10 +77,10 @@ class HomeShell extends ConsumerWidget {
                                       : (navigationShell.currentIndex == i
                                             ? scheme.primary
                                             : scheme.onSurfaceVariant),
-                                  size: 23,
+                                  size: ElaSize.v23,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: ElaSize.v4),
                               Text(
                                 labels[i],
                                 textAlign: TextAlign.center,

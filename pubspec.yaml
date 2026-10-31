@@ -115,3 +115,9 @@ flutter:
         - asset: assets/fonts/Literata.ttf
         - asset: assets/fonts/Literata-Italic.ttf
           style: italic
+    - family: NotoSymbols
+      fonts:
+        - asset: assets/fonts/NotoSymbols.ttf
+    - family: NotoEmoji
+      fonts:
+        - asset: assets/fonts/NotoEmoji.ttf

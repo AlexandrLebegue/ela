@@ -100,3 +100,22 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
 - **Flutter 3.35 — overlay** : `Positioned` ne peut pas appliquer sa `StackParentData` dans le sous-arbre d’un `OverlayEntry` (erreur levée au layout) → positionner avec `Transform.translate` (+ `Align`) ; `OverlayEntry.remove()` est la méthode de suppression ; pas de fonction `lerp` globale (écrire la sienne).
 - **Google Books** : branché à l’étape 2 — `GoogleBooksClient.fetchByIsbn` (API publique sans clé, timeout 4–5 s, toute erreur → null) ; le catalogue local répond d’abord pour garder curation/avis cohérents.
 - **Tests** : `GoogleFonts.config.allowRuntimeFetching = false` + horloge factice avancée à la main (les délais fake sont des `Future.delayed`) ; jamais de réseau ni de caméra en test (garde `isRunningUnderFlutterTest` = variable d’env `FLUTTER_TEST`, **pas** un `--dart-define`).
+
+## Refonte livre — 31/10/2026
+
+- **Étape 0 terminée** : 72 captures de référence, 36 scènes × jour/nuit,
+  412 × 915 @2,625 avec FontLoader et icônes SDK. Audit petit écran également
+  réalisé ; analyse statique initiale propre. Commit `64faa13`, push et réveil
+  ProxBoss effectués. Les débordements initiaux sont conservés à côté des PNG.
+- **Étape 1 terminée** : DA documentée dans `docs/DESIGN.md`, design system
+  `lib/core/design`, papier procédural, palettes AA, polices Cormorant Garamond,
+  Literata, Nunito Sans + symboles locaux sous OFL. Commit `d8f42bd` poussé.
+- **Étape 2 terminée** : tous les écrans refaits, liste/étagère, onglets rubans,
+  lettrines, ex-libris, états vides/erreurs/chargements, navigation et actions
+  async corrigées, formulaires accessibles, permission Internet release.
+  Mi-parcours `ff19e7a` poussé avec 72 captures et réveil ProxBoss effectué.
+  Audit A01–A16 traité. 158 tests verts (29 historiques, 120 scènes + contrôle
+  de configuration, 8 régressions). Analyse sans issue. Contrôle compact ×1,3
+  et régénération définitive des captures en cours avant livraison.
+- **Étapes 3 et 4** : à finaliser (planches, build web sans serveur, APK release
+  signé avec le certificat v0.1.0). Aucune release GitHub ne sera créée.

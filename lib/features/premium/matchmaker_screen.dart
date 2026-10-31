@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
+import '../../core/widgets/book_cover.dart';
 import '../../data/fake/demo_books.dart';
 import '../../data/fake/fake_delay.dart';
 import '../../data/models/book.dart';
@@ -19,15 +20,48 @@ class MatchMakerScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final entitlement = ref.watch(entitlementStreamProvider).value;
-    if (entitlement == null) return const SizedBox.shrink();
-    final entries = ref.watch(libraryEntriesProvider).value ??
-        const <LibraryEntry>[];
+    if (entitlement == null) {
+      final failed = ref.watch(entitlementStreamProvider).hasError;
+      return BookScaffold(
+        appBar: BookAppBar(title: const Text('MatchMaker')),
+        body: BookNotice(
+          title: failed
+              ? 'Cette page est momentanément indisponible'
+              : 'Ouverture de votre édition…',
+          loading: !failed,
+          action: failed
+              ? OutlinedButton(
+                  onPressed: () => ref.invalidate(entitlementStreamProvider),
+                  child: const Text('Réessayer'),
+                )
+              : null,
+        ),
+      );
+    }
+    final library = ref.watch(libraryEntriesProvider);
+    if (library.isLoading || library.hasError) {
+      return BookScaffold(
+        appBar: BookAppBar(title: const Text('MatchMaker')),
+        body: BookNotice(
+          title: library.hasError
+              ? 'Votre étagère est momentanément indisponible'
+              : 'Ouverture de votre étagère…',
+          loading: library.isLoading,
+          action: library.hasError
+              ? OutlinedButton(
+                  onPressed: () => ref.invalidate(libraryEntriesProvider),
+                  child: const Text('Réessayer'),
+                )
+              : null,
+        ),
+      );
+    }
+    final entries = library.value ?? const <LibraryEntry>[];
 
     // Vos livres : historique d'abord, puis PAL, 4 au maximum.
-    final mine = entries
-        .where((e) => DemoData.byIsbnLookup(e.isbn) != null)
-        .toList()
-      ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    final mine =
+        entries.where((e) => DemoData.byIsbnLookup(e.isbn) != null).toList()
+          ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
     final myBooks = mine
         .take(4)
         .map((e) => DemoData.byIsbnLookup(e.isbn)!)
@@ -38,45 +72,55 @@ class MatchMakerScreen extends ConsumerWidget {
       matches.addAll(_matchesFor(b).take(2));
     }
 
-    return Scaffold(
+    return BookScaffold(
       backgroundColor: scheme.surface,
-      appBar: AppBar(title: const Text('MatchMaker')),
+      appBar: BookAppBar(title: const Text('MatchMaker')),
       body: myBooks.isEmpty
           ? const _MatchEmpty()
           : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+              padding: const EdgeInsets.fromLTRB(
+                ElaSize.v16,
+                ElaSize.v8,
+                ElaSize.v16,
+                ElaSize.v96,
+              ),
               children: [
+                const ChapterHeader(
+                  chapter: 'VII',
+                  title: 'Affinités littéraires',
+                  subtitle: 'Votre étagère a de la conversation.',
+                ),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: ElaSize.v12),
                   child: Text(
                     'D’après « ${myBooks.map((b) => b.title).join(' », « ')} » '
                     'et votre étagère, Ela vous propose :',
                     style: TextStyle(
-                      fontSize: 13,
-                      height: 1.5,
+                      fontSize: ElaSize.v13,
+                      height: ElaSize.v1_5,
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 for (var i = 0; i < matches.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 10),
+                  if (i > 0) const SizedBox(height: ElaSize.v10),
                   if (entitlement.isPremium)
                     _MatchRow(
                       match: matches[i],
                       onTap: () =>
-                          context.go('/livre/${matches[i].book.isbn}'),
+                          context.push('/livre/${matches[i].book.isbn}'),
                     )
                   else
                     i < 2
                         ? _MatchRow(
                             match: matches[i],
                             onTap: () =>
-                                context.go('/livre/${matches[i].book.isbn}'),
+                                context.push('/livre/${matches[i].book.isbn}'),
                           )
                         : _LockedMatchRow(match: matches[i]),
                 ],
                 if (!entitlement.isPremium) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: ElaSize.v12),
                   PremiumUnlockCard(
                     message:
                         'Tous vos matchs, avec le score de compatibilité et '
@@ -94,19 +138,24 @@ class MatchMakerScreen extends ConsumerWidget {
         .toList();
     // Complète avec d'autres genres si le sien est trop étroit.
     if (others.length < 2) {
-      others.addAll(DemoData.books
-          .where((b) => b.isbn != origin.isbn && b.genre != origin.genre)
-          .toList());
+      others.addAll(
+        DemoData.books
+            .where((b) => b.isbn != origin.isbn && b.genre != origin.genre)
+            .toList(),
+      );
     }
-    final scored = others
-        .map((b) => _Match(
-              book: b,
-              becauseOf: origin,
-              score: 62 + stableHash('${origin.isbn}|${b.isbn}') % 36,
-              sameGenre: b.genre == origin.genre,
-            ))
-        .toList()
-      ..sort((a, b) => b.score - a.score);
+    final scored =
+        others
+            .map(
+              (b) => _Match(
+                book: b,
+                becauseOf: origin,
+                score: 62 + stableHash('${origin.isbn}|${b.isbn}') % 36,
+                sameGenre: b.genre == origin.genre,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.score - a.score);
     return scored;
   }
 }
@@ -138,63 +187,63 @@ class _MatchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
+    return PageCard(
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ElaSpace.radius),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(ElaSize.v12),
           child: Row(
             children: [
               _Cover(book: match.book),
-              const SizedBox(width: 12),
+              const SizedBox(width: ElaSize.v12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       match.book.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14.5,
+                        fontSize: ElaType.body,
                         fontWeight: FontWeight.w700,
                         color: scheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: ElaSize.v2),
                     Text(
                       '${match.book.author} · ${match.reason}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: ElaSize.v12_5,
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: ElaSize.v8),
                     Row(
                       children: [
                         Expanded(
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(
+                              ElaSpace.radius,
+                            ),
                             child: LinearProgressIndicator(
                               value: match.score / 100,
-                              minHeight: 6,
-                              backgroundColor:
-                                  scheme.outline.withValues(alpha: 0.25),
-                              valueColor:
-                                  const AlwaysStoppedAnimation(ElaColors.gold),
+                              minHeight: ElaSize.v6,
+                              backgroundColor: scheme.outline.withValues(
+                                alpha: 0.25,
+                              ),
+                              valueColor: AlwaysStoppedAnimation(
+                                Theme.of(context).colorScheme.secondary,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: ElaSize.v8),
                         Text(
                           '${match.score} %',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: ElaSize.v12_5,
                             fontWeight: FontWeight.w800,
-                            color: ElaColors.sepiaDeep,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ],
@@ -219,34 +268,32 @@ class _LockedMatchRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(ElaSize.v12),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ElaSpace.radius),
       ),
       child: Row(
         children: [
           _Cover(book: match.book),
-          const SizedBox(width: 12),
+          const SizedBox(width: ElaSize.v12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   match.book.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: ElaSize.v14,
                     fontWeight: FontWeight.w700,
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: ElaSize.v4),
                 Text(
                   'Match Premium — score masqué',
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: ElaSize.v12_5,
                     color: scheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
                   ),
@@ -254,7 +301,11 @@ class _LockedMatchRow extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.lock_outline, size: 18, color: scheme.onSurfaceVariant),
+          Icon(
+            Icons.lock_outline,
+            size: ElaSize.v18,
+            color: scheme.onSurfaceVariant,
+          ),
         ],
       ),
     );
@@ -263,33 +314,10 @@ class _LockedMatchRow extends StatelessWidget {
 
 class _Cover extends StatelessWidget {
   const _Cover({required this.book});
-
   final Book book;
-
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 46,
-      height: 70,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: scheme.outline.withValues(alpha: 0.4)),
-      ),
-      child: Center(
-        child: Text(
-          book.title.substring(0, 1),
-          style: TextStyle(
-            fontFamily: 'Lora',
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      BookCover(book: book, width: ElaSize.v48);
 }
 
 class _MatchEmpty extends StatelessWidget {
@@ -297,22 +325,11 @@ class _MatchEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          'Votre étagère est vide — le MatchMaker a besoin de quelques '
-          'livres (scannés ou en Pile à Lire) pour vous deviner.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.55,
-            color: scheme.onSurfaceVariant,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-      ),
+    return const BookNotice(
+      title: 'Votre étagère est vide',
+      message:
+          'Le MatchMaker a besoin de quelques livres scannés ou en Pile à Lire pour vous deviner.',
+      icon: Icons.auto_awesome_outlined,
     );
   }
 }

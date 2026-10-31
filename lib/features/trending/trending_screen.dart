@@ -51,7 +51,7 @@ class TrendingScreen extends ConsumerWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: ElaSize.v24),
                 child: Row(
                   children: [
                     Expanded(
@@ -62,7 +62,7 @@ class TrendingScreen extends ConsumerWidget {
                         onTap: () => context.push('/radar'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: ElaSize.v12),
                     Expanded(
                       child: _Discovery(
                         title: 'MatchMaker',
@@ -77,17 +77,20 @@ class TrendingScreen extends ConsumerWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: ElaSize.v16),
                 child: SizedBox(
                   height: MediaQuery.textScalerOf(context).scale(40) + 12,
                   child: ref
                       .watch(categoriesProvider)
                       .when(
                         data: (cats) => ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: ElaSize.v24,
+                          ),
                           scrollDirection: Axis.horizontal,
                           itemCount: cats.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: ElaSize.v8),
                           itemBuilder: (context, i) => Center(
                             child: FilterChip(
                               label: Text(cats[i]),
@@ -122,7 +125,9 @@ class TrendingScreen extends ConsumerWidget {
                     ]
                   : [
                       SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: ElaSize.v24,
+                        ),
                         sliver: SliverList.builder(
                           itemCount: items.length,
                           itemBuilder: (context, i) => StaggeredReveal(
@@ -145,13 +150,13 @@ class TrendingScreen extends ConsumerWidget {
                     ],
               loading: () => [
                 SliverPadding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(ElaSize.v24),
                   sliver: SliverList.list(
                     children: [
                       for (var i = 0; i < 4; i++)
                         const Padding(
-                          padding: EdgeInsets.only(bottom: 16),
-                          child: InkSkeletonBlock(height: 96),
+                          padding: EdgeInsets.only(bottom: ElaSize.v16),
+                          child: InkSkeletonBlock(height: ElaSize.v96),
                         ),
                     ],
                   ),
@@ -190,18 +195,22 @@ class _Discovery extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(BuildContext context) => PageCard(
     child: InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(ElaSize.v12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
+            Icon(
+              icon,
+              size: ElaSize.v20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: ElaSize.v8),
             Text(title, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 4),
+            const SizedBox(height: ElaSize.v4),
             Text(subtitle, style: Theme.of(context).textTheme.labelSmall),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/book.dart';
 import '../widgets/book_cover.dart';
 import 'tokens.dart';
+import 'components.dart';
 
 class BookTile extends StatelessWidget {
   const BookTile({
@@ -22,7 +23,7 @@ class BookTile extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
+      child: PageCard(
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(ElaSpace.radius),

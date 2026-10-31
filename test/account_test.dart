@@ -92,7 +92,11 @@ void main() {
     expect(find.textContaining('publier un avis'), findsOneWidget);
     expect(find.text('Continuer avec mon e-mail'), findsOneWidget);
     expect(find.text('Continuer avec Google'), findsOneWidget);
-    await tester.ensureVisible(find.text('Continuer avec Apple'));
+    await tester.scrollUntilVisible(
+      find.text('Continuer avec Apple'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pump();
     expect(find.text('Continuer avec Apple'), findsOneWidget);
   });

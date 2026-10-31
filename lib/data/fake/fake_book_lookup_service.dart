@@ -59,7 +59,7 @@ class FakeBookLookupService implements BookLookupService {
       isbn: vol['isbn'] as String? ?? '',
       title: title,
       author: author,
-      coverUrl: cover,
+      coverUrl: cover?.replaceFirst(RegExp(r'^http://'), 'https://'),
       description: vol['description'] as String?,
       genre: _genreFromCategory(category),
       year: year,

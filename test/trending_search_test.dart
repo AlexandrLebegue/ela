@@ -51,7 +51,18 @@ void main() {
       expect(find.text('Le Petit Prince'), findsOneWidget);
       expect(find.text('N°1'), findsOneWidget);
       expect(find.text('N°2'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('N°4'),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('N°4'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Classiques'),
+        -180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
 
       // Les puces de catégories sont arrivées ; on bascule sur Classiques.
       await pumpUntil(tester, find.text('Classiques'));

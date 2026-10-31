@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../animations.dart';
+import 'tokens.dart';
 
 /// Papier immobile, grain calculé une fois par taille/couleur, isolé des
 /// animations de contenu par une frontière de rendu.
@@ -249,4 +251,124 @@ class DropCapText extends StatelessWidget {
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.7),
     );
   }
+}
+
+class BookmarkTab extends StatelessWidget {
+  const BookmarkTab({
+    super.key,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: active,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: ClipPath(
+          clipper: const _RibbonClipper(),
+          child: Material(
+            color: active
+                ? scheme.primaryContainer
+                : scheme.surfaceContainerHighest.withValues(alpha: .4),
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 14, 8, 22),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: active
+                        ? scheme.onPrimaryContainer
+                        : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RibbonClipper extends CustomClipper<Path> {
+  const _RibbonClipper();
+  @override
+  Path getClip(Size size) => Path()
+    ..lineTo(size.width, 0)
+    ..lineTo(size.width, size.height)
+    ..lineTo(size.width / 2, size.height - 8)
+    ..lineTo(0, size.height)
+    ..close();
+  @override
+  bool shouldReclip(_RibbonClipper old) => false;
+}
+
+/// Les routes ouvertes directement gardent une sortie vers le premier chapitre.
+class BookAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const BookAppBar({
+    super.key,
+    required this.title,
+    this.actions,
+    this.leading,
+  });
+  final Widget title;
+  final List<Widget>? actions;
+  final Widget? leading;
+  @override
+  Size get preferredSize => const Size.fromHeight(72);
+  @override
+  Widget build(BuildContext context) => AppBar(
+    toolbarHeight: 72,
+    leading:
+        leading ??
+        IconButton(
+          tooltip: 'Retour',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            final router = GoRouter.maybeOf(context);
+            if (router != null) {
+              if (router.canPop()) {
+                router.pop();
+              } else {
+                router.go('/tendance');
+              }
+            } else {
+              Navigator.maybePop(context);
+            }
+          },
+        ),
+    title: DefaultTextStyle.merge(
+      style: Theme.of(context).textTheme.titleMedium,
+      maxLines: 2,
+      overflow: TextOverflow.visible,
+      child: title,
+    ),
+    actions: actions,
+  );
+}
+
+class PageCard extends StatelessWidget {
+  const PageCard({super.key, required this.child, this.margin});
+  final Widget child;
+  final EdgeInsetsGeometry? margin;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: margin ?? EdgeInsets.zero,
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ElaSpace.radius),
+        boxShadow: ElaShadows.page(Theme.of(context).colorScheme.onSurface),
+      ),
+      child: Card(child: child),
+    ),
+  );
 }

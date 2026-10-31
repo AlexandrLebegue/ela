@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,36 +39,50 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   void initState() {
     super.initState();
     // Chaque livre consulté entre dans l'historique (affiché à l'étape 4).
-    ref.read(libraryServiceProvider).addHistory(widget.isbn);
+    ref.read(bookByIsbnProvider(widget.isbn).future).then((book) {
+      if (mounted && book != null) {
+        ref.read(libraryServiceProvider).addHistory(widget.isbn);
+      }
+    }, onError: (Object _, StackTrace __) {});
   }
 
   Future<void> _togglePal({required Book book, required bool inPal}) async {
-    final lib = ref.read(libraryServiceProvider);
-    if (inPal) {
-      await lib.removeEntry(widget.isbn, LibrarySection.toRead);
-      if (mounted) {
-        ElaHaptics.softTap();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Retiré de votre Pile à Lire.')),
-        );
-      }
-      return;
-    }
     if (_addingToPal) return;
     setState(() => _addingToPal = true);
-    // On capture la position de la couverture avant le vol.
-    final from = _coverRect();
-    final target = _libraryTargetRect();
-    await lib.addToRead(widget.isbn);
-    if (!mounted) return;
-    setState(() => _addingToPal = false);
-    ElaHaptics.heartbeat();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ajouté à votre Pile à Lire.')),
-    );
-    // La couverture « lévite » vers l'icône Bibliothèque de la barre.
-    if (from != null) {
-      FlyToLibrary.fly(context, book: book, from: from, to: target);
+    final from = _coverRect(), target = _libraryTargetRect();
+    try {
+      final library = ref.read(libraryServiceProvider);
+      if (inPal) {
+        await library.removeEntry(widget.isbn, LibrarySection.toRead);
+      } else {
+        await library.addToRead(widget.isbn);
+      }
+      if (!mounted) return;
+      ElaHaptics.softTap();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            inPal
+                ? 'Retiré de votre Pile à Lire.'
+                : 'Ajouté à votre Pile à Lire.',
+          ),
+        ),
+      );
+      if (!inPal && from != null && !MediaQuery.disableAnimationsOf(context)) {
+        FlyToLibrary.fly(context, book: book, from: from, to: target);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'La bibliothèque n’a pas pu être modifiée. Réessayez.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _addingToPal = false);
     }
   }
 
@@ -80,8 +96,15 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
   /// Position approx. de l'icône Bibliothèque dans la barre (3e bouton/4).
   Rect _libraryTargetRect() {
     final size = MediaQuery.of(context).size;
-    final center = Offset(size.width * 0.625, size.height - 44);
-    return Rect.fromCenter(center: center, width: 34, height: 48);
+    final center = Offset(
+      size.width * ElaSize.v0_625,
+      size.height - ElaSize.v44,
+    );
+    return Rect.fromCenter(
+      center: center,
+      width: ElaSize.v34,
+      height: ElaSize.v48,
+    );
   }
 
   /// Ouvre l'écran de compte (lazy registration). Dégradation douce si
@@ -107,69 +130,109 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
       return;
     }
     setState(() => _purchased = true);
-    final link =
-        await ref.read(paymentServiceProvider).affiliatePurchaseLink(widget.isbn);
+    String link;
+    try {
+      link = await ref
+          .read(paymentServiceProvider)
+          .affiliatePurchaseLink(widget.isbn);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _purchased = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le lien d’achat est momentanément indisponible.'),
+          ),
+        );
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() => _purchased = false);
     ElaHaptics.softTap();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('L’offrir : ${book.title} — lien affilié $link'),
-      ),
+      SnackBar(content: Text('L’offrir : ${book.title} — lien affilié $link')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final bookAsync = ref.watch(bookByIsbnProvider(widget.isbn));
     final book = bookAsync.value ?? DemoData.byIsbnLookup(widget.isbn);
 
     if (book == null && bookAsync.isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Ela')),
+      return BookScaffold(
+        appBar: BookAppBar(title: const Text('Ela')),
         body: const _CurationLoading(
-            message: 'Ouverture de la fiche…', skeletons: 3),
+          message: 'Ouverture de la fiche…',
+          skeletons: 3,
+        ),
       );
     }
 
     if (book == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Ela')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Text(
-              'Ce livre n’a pas pu être trouvé.\nVérifiez l’ISBN et réessayez.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14.5, color: scheme.onSurfaceVariant),
-            ),
+      return BookScaffold(
+        appBar: BookAppBar(title: const Text('Ela')),
+        body: BookNotice(
+          title: 'Ce livre n’a pas pu être trouvé.',
+          message: 'Vérifiez l’ISBN et réessayez.',
+          action: OutlinedButton(
+            onPressed: () => ref.invalidate(bookByIsbnProvider(widget.isbn)),
+            child: const Text('Réessayer'),
           ),
         ),
       );
     }
 
-    final inPal = ref.watch(libraryEntriesProvider).value
-            ?.any((e) => e.isbn == book.isbn && e.section == LibrarySection.toRead) ??
+    final inPal =
+        ref
+            .watch(libraryEntriesProvider)
+            .value
+            ?.any(
+              (e) => e.isbn == book.isbn && e.section == LibrarySection.toRead,
+            ) ??
         false;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(book.title, overflow: TextOverflow.ellipsis),
+    return BookScaffold(
+      appBar: BookAppBar(
+        leading: IconButton(
+          tooltip: 'Retour',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            final router = GoRouter.maybeOf(context);
+            if (router?.canPop() ?? false) {
+              router!.pop();
+            } else if (router != null) {
+              router.go('/tendance');
+            } else {
+              Navigator.maybePop(context);
+            }
+          },
+        ),
+        title: const Text('La fiche de lecture'),
         actions: [
           IconButton(
             icon: const Icon(Icons.share),
             tooltip: 'Partager',
-            onPressed: () {
+            onPressed: () async {
+              await Clipboard.setData(
+                ClipboardData(
+                  text: kIsWeb
+                      ? Uri.base
+                            .replace(fragment: '/livre/${book.isbn}')
+                            .toString()
+                      : 'Ela · ${book.title} · ISBN ${book.isbn}',
+                ),
+              );
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Lien de la fiche copié.')),
+                const SnackBar(content: Text('Référence de la fiche copiée.')),
               );
             },
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: ElaSize.v24),
         child: Column(
           children: [
             _DetailHeader(
@@ -177,9 +240,9 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
               inPal: inPal,
               busy: _addingToPal,
               purchased: _purchased,
-            onTogglePal: () => _togglePal(book: book, inPal: inPal),
-            onPurchase: () => _purchase(book),
-            coverKey: _coverKey,
+              onTogglePal: () => _togglePal(book: book, inPal: inPal),
+              onPurchase: () => _purchase(book),
+              coverKey: _coverKey,
             ),
             _TabBar(
               current: _tab,
@@ -197,11 +260,17 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
                   FadeTransition(opacity: animation, child: child),
               child: switch (_tab) {
                 _DetailTab.aiPress => _AiPressTab(
-                    key: const ValueKey('tab-ai'), isbn: book.isbn),
+                  key: const ValueKey('tab-ai'),
+                  isbn: book.isbn,
+                ),
                 _DetailTab.web => _WebTab(
-                    key: const ValueKey('tab-web'), isbn: book.isbn),
+                  key: const ValueKey('tab-web'),
+                  isbn: book.isbn,
+                ),
                 _DetailTab.community => _CommunityTab(
-                    key: const ValueKey('tab-community'), isbn: book.isbn),
+                  key: const ValueKey('tab-community'),
+                  isbn: book.isbn,
+                ),
               },
             ),
           ],
@@ -212,12 +281,12 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
 }
 
 String _languageName(String code) => switch (code) {
-      'en' => 'anglais',
-      'es' => 'espagnol',
-      'de' => 'allemand',
-      'it' => 'italien',
-      _ => code,
-    };
+  'en' => 'anglais',
+  'es' => 'espagnol',
+  'de' => 'allemand',
+  'it' => 'italien',
+  _ => code,
+};
 
 enum _DetailTab { aiPress, web, community }
 
@@ -244,15 +313,20 @@ class _DetailHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(
+        ElaSize.v16,
+        ElaSize.v8,
+        ElaSize.v16,
+        ElaSize.v12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BookCover(key: coverKey, book: book, width: 110),
-              const SizedBox(width: 16),
+              BookCover(key: coverKey, book: book, width: ElaSize.v110),
+              const SizedBox(width: ElaSize.v16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,42 +334,44 @@ class _DetailHeader extends StatelessWidget {
                     Text(
                       book.title,
                       style: TextStyle(
-                        fontFamily: 'Lora',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontFamily: ElaType.titleFamily,
+                        fontSize: ElaType.title,
+                        fontWeight: FontWeight.w600,
                         color: scheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: ElaSize.v4),
                     Text(
                       book.author,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: ElaSize.v14,
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
                     if (book.publisher != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: ElaSize.v2),
                       Text(
                         '${book.publisher} · ${book.year}',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: ElaSize.v13,
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 10),
+                    const SizedBox(height: ElaSize.v10),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
+                        horizontal: ElaSize.v10,
+                        vertical: ElaSize.v5,
+                      ),
                       decoration: BoxDecoration(
                         color: scheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(ElaSpace.radius),
                       ),
                       child: Text(
                         book.badgeLabel,
                         style: TextStyle(
-                          fontSize: 12.5,
+                          fontSize: ElaSize.v12_5,
                           fontWeight: FontWeight.w700,
                           color: scheme.onPrimaryContainer,
                         ),
@@ -306,23 +382,26 @@ class _DetailHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: ElaSize.v10),
           Text(
             '${formatInt(book.readersCount)} lecteurs d’Ela ont lu ce livre',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: ElaSize.v13,
               color: scheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
             ),
           ),
           if (book.description != null) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: ElaSize.v14),
             Text(
               book.description!,
-              style: const TextStyle(fontSize: 14.5, height: 1.55),
+              style: const TextStyle(
+                fontSize: ElaSize.v14_5,
+                height: ElaSize.v1_55,
+              ),
             ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: ElaSize.v16),
           Row(
             children: [
               Expanded(
@@ -330,36 +409,47 @@ class _DetailHeader extends StatelessWidget {
                   onPressed: busy ? null : onTogglePal,
                   icon: busy
                       ? const SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(inPal ? Icons.check_circle : Icons.bookmark_add_outlined),
+                          width: ElaSize.v16,
+                          height: ElaSize.v16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: ElaSize.v2,
+                          ),
+                        )
+                      : Icon(
+                          inPal
+                              ? Icons.check_circle
+                              : Icons.bookmark_add_outlined,
+                        ),
                   label: Text(inPal ? 'Dans votre PAL' : 'Ajouter à la PAL'),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: ElaSize.v12),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: purchased ? null : onPurchase,
                   icon: purchased
                       ? const SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
+                          width: ElaSize.v16,
+                          height: ElaSize.v16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: ElaSize.v2,
+                          ),
+                        )
                       : const Icon(Icons.storefront_outlined),
                   label: Text(purchased ? 'Ouverture…' : 'Acheter'),
                 ),
               ),
             ],
           ),
-          if (book.priceEur != null)
-            const SizedBox(height: 10),
+          if (book.priceEur != null) const SizedBox(height: ElaSize.v10),
           if (book.priceEur != null)
             Padding(
-              padding: const EdgeInsets.only(left: 2),
+              padding: const EdgeInsets.only(left: ElaSize.v2),
               child: Text(
                 'À partir de ${formatPrice(book.priceEur)} '
                 '(${formatPrice(book.usedPriceEur)} en occasion)',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: ElaSize.v13,
                   color: scheme.onSurfaceVariant,
                 ),
               ),
@@ -379,12 +469,17 @@ class _TabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: ElaSize.v8),
       child: Row(
         children: [
           for (final tab in _DetailTab.values)
-            Expanded(child: _TabButton(tab: tab, active: current == tab,
-                onTap: () => onSelected(tab))),
+            Expanded(
+              child: _TabButton(
+                tab: tab,
+                active: current == tab,
+                onTap: () => onSelected(tab),
+              ),
+            ),
         ],
       ),
     );
@@ -392,53 +487,25 @@ class _TabBar extends StatelessWidget {
 }
 
 class _TabButton extends StatelessWidget {
-  const _TabButton({required this.tab, required this.active, required this.onTap});
+  const _TabButton({
+    required this.tab,
+    required this.active,
+    required this.onTap,
+  });
 
   final _DetailTab tab;
   final bool active;
   final VoidCallback onTap;
 
   String get _label => switch (tab) {
-        _DetailTab.aiPress => 'Synthèse IA & Presse',
-        _DetailTab.web => 'Le Web',
-        _DetailTab.community => 'La Communauté',
-      };
+    _DetailTab.aiPress => 'Synthèse IA & Presse',
+    _DetailTab.web => 'Le Web',
+    _DetailTab.community => 'La Communauté',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Column(
-          children: [
-            Text(
-              _label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: active ? scheme.onSurface : scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 6),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              height: 3,
-              width: 34,
-              decoration: BoxDecoration(
-                color: active ? ElaColors.gold : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return BookmarkTab(label: _label, active: active, onTap: onTap);
   }
 }
 
@@ -453,45 +520,50 @@ class _CurationLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          BreathingText(
-            message ?? 'Ela lit, trie et cuit vos avis au feu de bois…',
-            style: TextStyle(
-              color: scheme.onSurfaceVariant,
-              fontSize: 15,
-              fontStyle: FontStyle.italic,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(ElaSize.v16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BreathingText(
+              message ?? 'Ela lit, trie et cuit vos avis au feu de bois…',
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontSize: ElaSize.v15,
+                fontStyle: FontStyle.italic,
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          for (var i = 0; i < skeletons; i++) ...[
-            if (i > 0) const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: i == 0
-                    ? scheme.primaryContainer.withValues(alpha: 0.5)
-                    : null,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: scheme.outline.withValues(alpha: 0.35),
+            const SizedBox(height: ElaSize.v18),
+            for (var i = 0; i < skeletons; i++) ...[
+              if (i > 0) const SizedBox(height: ElaSize.v12),
+              Container(
+                decoration: BoxDecoration(
+                  color: i == 0
+                      ? scheme.primaryContainer.withValues(alpha: 0.5)
+                      : null,
+                  borderRadius: BorderRadius.circular(ElaSpace.radius),
+                  border: Border.all(
+                    color: scheme.outline.withValues(alpha: 0.35),
+                  ),
+                ),
+                padding: const EdgeInsets.all(ElaSize.v14),
+                child: Column(
+                  children: [
+                    InkSkeletonBlock(width: ElaSize.v120, height: ElaSize.v10),
+                    const SizedBox(height: ElaSize.v8),
+                    const InkSkeletonBlock(height: ElaSize.v13),
+                    const SizedBox(height: ElaSize.v6),
+                    const InkSkeletonBlock(
+                      width: ElaSize.v220,
+                      height: ElaSize.v13,
+                    ),
+                  ],
                 ),
               ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                children: [
-                  InkSkeletonBlock(width: 120, height: 10),
-                  const SizedBox(height: 8),
-                  const InkSkeletonBlock(height: 13),
-                  const SizedBox(height: 6),
-                  const InkSkeletonBlock(width: 220, height: 13),
-                ],
-              ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -521,51 +593,32 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
+    return PageCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ElaSize.v16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              spacing: ElaSize.v8,
+              runSpacing: ElaSize.v8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Icon(Icons.auto_awesome, color: ElaColors.gold, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Synthèse Ela',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  color: scheme.secondary,
+                  size: ElaSize.v20,
+                ),
+                Text(
+                  'Synthèse Ela',
+                  style: Theme.of(context).textTheme.labelMedium,
                 ),
                 if (aiTokens != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: scheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '✦ $aiTokens jetons IA ce mois-ci',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
+                  Chip(label: Text('✦ $aiTokens jetons IA ce mois-ci')),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(
-              _shown,
-              style: const TextStyle(fontSize: 14.5, height: 1.6),
-            ),
+            const SizedBox(height: ElaSize.v10),
+            DropCapText(_shown),
           ],
         ),
       ),
@@ -583,15 +636,15 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 10),
+      padding: const EdgeInsets.only(top: ElaSize.v20, bottom: ElaSize.v10),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
               style: TextStyle(
-                fontFamily: 'Lora',
-                fontSize: 16,
+                fontFamily: ElaType.titleFamily,
+                fontSize: ElaSize.v16,
                 fontWeight: FontWeight.w700,
                 color: scheme.onSurface,
               ),
@@ -609,8 +662,7 @@ class _SectionHeader extends StatelessWidget {
 /// 2 avis web visibles, le reste flouté avec invitation.
 bool _isFullAccess(WidgetRef ref, String isbn, Entitlement? entitlement) =>
     entitlement != null &&
-    (entitlement.isPremium ||
-        ref.watch(unlockedBooksProvider).contains(isbn));
+    (entitlement.isPremium || ref.watch(unlockedBooksProvider).contains(isbn));
 
 class _AiPressTab extends ConsumerWidget {
   const _AiPressTab({super.key, required this.isbn});
@@ -628,6 +680,7 @@ class _AiPressTab extends ConsumerWidget {
       error: (e, _) => _SoftNotice(
         'La curation IA ne couvre (encore) pas ce titre. '
         'La communauté en a peut-être parlé dans l’onglet suivant.',
+        onRetry: () => ref.invalidate(curationProvider(isbn)),
       ),
       data: (c) => _TabScroll(
         children: [
@@ -662,9 +715,12 @@ class _WebTab extends ConsumerWidget {
 
     return curation.when(
       loading: () => const _CurationLoading(
-          message: 'Ela fouille les pages du web, blog après blog…'),
-      error: (e, _) => const _SoftNotice(
-          'Les avis du web ne sont pas disponibles pour ce titre.'),
+        message: 'Ela fouille les pages du web, blog après blog…',
+      ),
+      error: (e, _) => _SoftNotice(
+        'Les avis du web ne sont pas disponibles pour ce titre.',
+        onRetry: () => ref.invalidate(curationProvider(isbn)),
+      ),
       data: (c) => _TabScroll(
         children: [
           _SectionHeader('${c.web.length} avis du web'),
@@ -691,9 +747,9 @@ class _BlurredReview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
+    return PageCard(
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(ElaSize.v14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -705,32 +761,38 @@ class _BlurredReview extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Lecteur d’Ela  ·  blog  ·  12 mai 2026'),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: ElaSize.v6),
                   const Text('« Un titre d’avis qui ne dit pas où on va »'),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: ElaSize.v4),
                   const Text(
                     'Ceci est l’aperçu d’un avis. Le texte complet n’est '
                     'pas lisible dans la version gratuite — les contours '
                     'restent, les mots non. L’éditeur a eu l’idée, la mise '
                     'en page a fait le reste, et la lecture a continué '
                     'seule, longtemps, dans un train.',
-                    style: TextStyle(fontSize: 13.5, height: 1.5),
+                    style: TextStyle(
+                      fontSize: ElaSize.v13_5,
+                      height: ElaSize.v1_5,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: ElaSize.v10),
             Row(
               children: [
-                Icon(Icons.lock_outline, size: 15,
-                    color: scheme.onSurfaceVariant),
-                const SizedBox(width: 6),
+                Icon(
+                  Icons.lock_outline,
+                  size: ElaSize.v15,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: ElaSize.v6),
                 Text(
                   'Avis Premium',
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: ElaSize.v12_5,
                     fontWeight: FontWeight.w700,
-                    color: ElaColors.sepiaDeep,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
@@ -758,7 +820,20 @@ class _TokenUnlockCardState extends ConsumerState<_TokenUnlockCard> {
   Future<void> _unlock() async {
     if (_spending) return;
     setState(() => _spending = true);
-    final ok = await ref.read(paymentServiceProvider).spendAiToken();
+    bool ok;
+    try {
+      ok = await ref.read(paymentServiceProvider).spendAiToken();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _spending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le déblocage a été interrompu. Réessayez.'),
+          ),
+        );
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() => _spending = false);
     if (ok) {
@@ -775,7 +850,7 @@ class _TokenUnlockCardState extends ConsumerState<_TokenUnlockCard> {
 
     if (tokens <= 0) {
       return Padding(
-        padding: const EdgeInsets.only(top: 12),
+        padding: const EdgeInsets.only(top: ElaSize.v12),
         child: PremiumUnlockCard(
           message:
               'Plus de jetons IA ce mois-ci. Premium inclut 3 jetons par '
@@ -785,56 +860,36 @@ class _TokenUnlockCardState extends ConsumerState<_TokenUnlockCard> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Card(
+      padding: const EdgeInsets.only(top: ElaSize.v12),
+      child: PageCard(
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(ElaSize.v14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: ElaSize.v8,
+                runSpacing: ElaSize.v8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Icon(Icons.auto_awesome, color: ElaColors.gold, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Débloquer la fiche complète',
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                      ),
-                    ),
+                  Text(
+                    'Débloquer la fiche complète',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: scheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '✦ $tokens jetons ce mois-ci',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
+                  Chip(label: Text('✦ $tokens jetons ce mois-ci')),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: ElaSize.v8),
               Text(
                 '1 jeton IA débloque la synthèse complète et tous les avis '
                 'de cette fiche.',
                 style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.45,
+                  fontSize: ElaSize.v12_5,
+                  height: ElaSize.v1_45,
                   color: scheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: ElaSize.v12),
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton.tonal(
@@ -844,7 +899,7 @@ class _TokenUnlockCardState extends ConsumerState<_TokenUnlockCard> {
                           'Déblocage…',
                           style: TextStyle(
                             color: scheme.onSecondaryContainer,
-                            fontSize: 13.5,
+                            fontSize: ElaSize.v13_5,
                           ),
                         )
                       : const Text('Débloquer — 1 jeton'),
@@ -871,34 +926,40 @@ class _CommunityTab extends ConsumerWidget {
 
     return reviews.when(
       loading: () => const _CurationLoading(
-          message: 'Les lecteurs d’Ela partagent leur avis…'),
-      error: (e, _) => const _SoftNotice(
-          'Impossible de charger les avis de la communauté.'),
+        message: 'Les lecteurs d’Ela partagent leur avis…',
+      ),
+      error: (e, _) =>
+          const _SoftNotice('Impossible de charger les avis de la communauté.'),
       data: (list) => _TabScroll(
         children: [
           _SectionHeader(
             'La communauté d’Ela',
             trailing: OutlinedButton.icon(
               onPressed: () => _openWriteSheet(context, ref),
-              icon: const Icon(Icons.edit, size: 16),
+              icon: const Icon(Icons.edit, size: ElaSize.v16),
               label: const Text('Écrire un avis'),
             ),
           ),
+          if (list.isEmpty)
+            const BookNotice(
+              title: 'La première voix sera peut-être la vôtre.',
+              message: 'Aucun avis dans cette page pour le moment.',
+            ),
           for (final r in list)
             _ReviewCard(
               review: r,
               reportable: true,
               onReport: () => _report(context, ref, r),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: ElaSize.v8),
           if (profile.isAnonymous)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: ElaSize.v8),
               child: Text(
                 'Votre avis rejoindra la page du livre dès que vous '
                 'publierez sous votre compte Ela.',
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: ElaSize.v12_5,
                   color: scheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
                 ),
@@ -914,20 +975,24 @@ class _CommunityTab extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: ElaColors.transparent,
       builder: (sheetContext) => _WriteReviewSheet(isbn: isbn),
     );
   }
 
   Future<void> _report(
-      BuildContext context, WidgetRef ref, Review review) async {
+    BuildContext context,
+    WidgetRef ref,
+    Review review,
+  ) async {
     ElaHaptics.softTap();
     await ref.read(reviewServiceProvider).reportReview(review.id);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-            'Signalement bien reçu. Merci de veiller sur Ela avec nous.'),
+          'Signalement bien reçu. Merci de veiller sur Ela avec nous.',
+        ),
       ),
     );
   }
@@ -941,12 +1006,17 @@ class _TabScroll extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        ElaSize.v16,
+        ElaSize.v4,
+        ElaSize.v16,
+        ElaSize.v8,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final child in children) ...[
-            if (child is _ReviewCard) const SizedBox(height: 12),
+            if (child is _ReviewCard) const SizedBox(height: ElaSize.v12),
             child,
           ],
         ],
@@ -956,32 +1026,18 @@ class _TabScroll extends StatelessWidget {
 }
 
 class _SoftNotice extends StatelessWidget {
-  const _SoftNotice(this.message);
-
+  const _SoftNotice(this.message, {this.onRetry});
   final String message;
-
+  final VoidCallback? onRetry;
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.5,
-            color: scheme.onSurfaceVariant,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => BookNotice(
+    title: message,
+    action: onRetry == null
+        ? null
+        : OutlinedButton(onPressed: onRetry, child: const Text('Réessayer')),
+  );
 }
 
-/// Carte d'avis (presse / web / communauté).
 class _ReviewCard extends StatefulWidget {
   const _ReviewCard({
     required this.review,
@@ -1014,10 +1070,10 @@ class _ReviewCardState extends State<_ReviewCard> {
       shortDate(r.publishedAt),
     ].join('  ·  ');
 
-    return Card(
+    return PageCard(
       key: ValueKey('review-${r.id}'),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(ElaSize.v14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1027,33 +1083,33 @@ class _ReviewCardState extends State<_ReviewCard> {
                   child: Text(
                     meta,
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: ElaSize.v12_5,
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 if (widget.reportable)
-                  InkWell(
-                    onTap: widget.onReport,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(Icons.flag_outlined,
-                          size: 15, color: scheme.onSurfaceVariant),
-                    ),
+                  IconButton(
+                    tooltip: 'Signaler cet avis',
+                    onPressed: widget.onReport,
+                    icon: const Icon(Icons.flag_outlined),
                   ),
               ],
             ),
             if (widget.translated) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: ElaSize.v6),
               Row(
                 children: [
-                  Icon(Icons.translate, size: 14,
-                      color: scheme.onSurfaceVariant),
-                  const SizedBox(width: 5),
+                  Icon(
+                    Icons.translate,
+                    size: ElaSize.v14,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: ElaSize.v5),
                   Text(
                     'Traduit par Ela (${_languageName(widget.review.language)})',
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: ElaSize.v11_5,
                       fontStyle: FontStyle.italic,
                       color: scheme.onSurfaceVariant,
                     ),
@@ -1061,46 +1117,53 @@ class _ReviewCardState extends State<_ReviewCard> {
                 ],
               ),
             ],
-            const SizedBox(height: 6),
+            const SizedBox(height: ElaSize.v6),
             Text(
               '« ${r.title} »',
               style: TextStyle(
-                fontFamily: 'Lora',
-                fontSize: 14.5,
+                fontFamily: ElaType.titleFamily,
+                fontSize: ElaSize.v14_5,
                 fontWeight: FontWeight.w700,
                 color: scheme.onSurface,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: ElaSize.v4),
             AnimatedSize(
               duration: const Duration(milliseconds: 240),
               curve: Curves.easeOutCubic,
               child: Text(
                 r.text,
-                maxLines: _expanded ? null : 4,
-                overflow:
-                    _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13.5, height: 1.5),
+                maxLines: _expanded || r.text.length <= 160 ? null : 4,
+                overflow: _expanded || r.text.length <= 160
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: ElaSize.v13_5,
+                  height: ElaSize.v1_5,
+                ),
               ),
             ),
             if (r.text.length > 160)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.only(top: ElaSize.v4),
                 child: TextButton(
                   onPressed: () => setState(() => _expanded = !_expanded),
                   child: Text(_expanded ? 'Réduire' : 'Lire la suite'),
                 ),
               ),
-            const SizedBox(height: 2),
+            const SizedBox(height: ElaSize.v2),
             Row(
               children: [
-                Icon(Icons.favorite_outline,
-                    size: 14, color: scheme.onSurfaceVariant),
-                const SizedBox(width: 5),
+                Icon(
+                  Icons.favorite_outline,
+                  size: ElaSize.v14,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: ElaSize.v5),
                 Text(
                   formatInt(r.likes),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: ElaSize.v12,
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
@@ -1142,6 +1205,34 @@ class _WriteReviewSheetState extends ConsumerState<_WriteReviewSheet> {
     final text = _textController.text.trim();
     if (title.isEmpty || text.isEmpty || _submitting) return;
     setState(() => _submitting = true);
+    bool allowed;
+    try {
+      allowed = await ref
+          .read(moderationServiceProvider)
+          .isAllowed('$title $text');
+    } catch (_) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'La vérification est indisponible. Votre texte est conservé.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    if (!allowed) {
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Votre avis contient un passage à reformuler.'),
+        ),
+      );
+      return;
+    }
     final profile = ref.read(profileProvider);
     final review = Review(
       id: 'local-${DateTime.now().millisecondsSinceEpoch}',
@@ -1153,13 +1244,31 @@ class _WriteReviewSheetState extends ConsumerState<_WriteReviewSheet> {
       publishedAt: DateTime.now(),
       likes: 0,
     );
-    final saved = await ref.read(reviewServiceProvider).addCommunityReview(review);
+    Review saved;
+    try {
+      saved = await ref.read(reviewServiceProvider).addCommunityReview(review);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Votre avis n’a pas été publié. Le texte est conservé.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() => _submitting = false);
     ref.invalidate(communityReviewsProvider(isbn));
     // Bilan de curiosité : compteur d'avis publiés (persistance locale).
     final prefs = ref.read(sharedPreferencesProvider);
-    prefs.setInt('ela.stats.reviews', (prefs.getInt('ela.stats.reviews') ?? 0) + 1);
+    prefs.setInt(
+      'ela.stats.reviews',
+      (prefs.getInt('ela.stats.reviews') ?? 0) + 1,
+    );
     Navigator.of(context).pop();
     ElaHaptics.heartbeat();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1174,70 +1283,79 @@ class _WriteReviewSheetState extends ConsumerState<_WriteReviewSheet> {
     final scheme = Theme.of(context).colorScheme;
     final profile = ref.watch(profileProvider);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: profile.isAnonymous
-          ? _AnonymousPrompt()
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Votre avis',
-                  style: TextStyle(
-                    fontFamily: 'Lora',
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Publié sous le nom « ${profile.displayNameOrEmail} ».',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _titleController,
-                  maxLength: 90,
-                  decoration: const InputDecoration(
-                    hintText: 'Un titre pour votre avis',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _textController,
-                  maxLength: 600,
-                  maxLines: 4,
-                  minLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: 'Ce livre vous a fait quoi ?',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _submitting ? null : _submit,
-                  icon: _submitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.send, size: 17),
-                  label: Text(_submitting ? 'Publication…' : 'Publier'),
-                ),
-              ],
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Container(
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(ElaSize.v24),
             ),
+          ),
+          padding: EdgeInsets.only(
+            left: ElaSize.v20,
+            right: ElaSize.v20,
+            top: ElaSize.v20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: profile.isAnonymous
+              ? _AnonymousPrompt()
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Votre avis',
+                      style: TextStyle(
+                        fontFamily: ElaType.titleFamily,
+                        fontSize: ElaSize.v19,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: ElaSize.v4),
+                    Text(
+                      'Publié sous le nom « ${profile.displayNameOrEmail} ».',
+                      style: TextStyle(
+                        fontSize: ElaSize.v12_5,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: ElaSize.v16),
+                    TextField(
+                      controller: _titleController,
+                      maxLength: 90,
+                      decoration: const InputDecoration(
+                        labelText: 'Un titre pour votre avis',
+                      ),
+                    ),
+                    const SizedBox(height: ElaSize.v12),
+                    TextField(
+                      controller: _textController,
+                      maxLength: 600,
+                      maxLines: 4,
+                      minLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Ce livre vous a fait quoi ?',
+                      ),
+                    ),
+                    const SizedBox(height: ElaSize.v16),
+                    FilledButton.icon(
+                      onPressed: _submitting ? null : _submit,
+                      icon: _submitting
+                          ? const SizedBox(
+                              width: ElaSize.v16,
+                              height: ElaSize.v16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: ElaSize.v2,
+                              ),
+                            )
+                          : const Icon(Icons.send, size: ElaSize.v17),
+                      label: Text(_submitting ? 'Publication…' : 'Publier'),
+                    ),
+                  ],
+                ),
+        ),
+      ),
     );
   }
 }
@@ -1250,29 +1368,33 @@ class _AnonymousPrompt extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.person, size: 40, color: ElaColors.gold),
-        const SizedBox(height: 12),
+        Icon(
+          Icons.person,
+          size: ElaSize.v40,
+          color: Theme.of(context).colorScheme.secondary,
+        ),
+        const SizedBox(height: ElaSize.v12),
         Text(
           'Votre avis mérite un nom',
           style: TextStyle(
-            fontFamily: 'Lora',
-            fontSize: 18,
+            fontFamily: ElaType.titleFamily,
+            fontSize: ElaSize.v18,
             fontWeight: FontWeight.w700,
             color: scheme.onSurface,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: ElaSize.v6),
         Text(
           'Publier un avis sur Ela demande un compte — e-mail, Google ou '
           'Apple, en une minute, sans engagement.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 13.5,
-            height: 1.5,
+            fontSize: ElaSize.v13_5,
+            height: ElaSize.v1_5,
             color: scheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: ElaSize.v16),
         FilledButton(
           onPressed: () {
             final router = GoRouter.maybeOf(context);

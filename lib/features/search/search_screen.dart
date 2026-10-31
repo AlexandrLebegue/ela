@@ -8,9 +8,20 @@ import '../../core/design/book_tile.dart';
 import '../../data/models/book.dart';
 import '../../providers.dart';
 
-final searchResultsProvider = FutureProvider.family<List<Book>, String>(
-  (ref, query) => ref.watch(bookLookupServiceProvider).search(query),
-);
+final searchResultsProvider = FutureProvider.family<List<Book>, String>((
+  ref,
+  query,
+) async {
+  final service = ref.watch(bookLookupServiceProvider);
+  final results = await service.search(query);
+  if (results.isNotEmpty) return results;
+  final isbn = query.replaceAll(RegExp(r'[^0-9]'), '');
+  if (isbn.length == 13) {
+    final book = await service.lookupByIsbn(isbn);
+    if (book != null) return [book];
+  }
+  return [];
+});
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -57,7 +68,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: ElaSize.v24),
                 child: TextField(
                   controller: _controller,
                   onChanged: _changed,
@@ -110,7 +121,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     : [
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(ElaSize.v24),
                             child: Text(
                               '${items.length} livre${items.length > 1 ? 's' : ''} à découvrir',
                               style: Theme.of(context).textTheme.labelMedium,
@@ -118,7 +129,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ),
                         ),
                         SliverPadding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: ElaSize.v24,
+                          ),
                           sliver: SliverList.builder(
                             itemCount: items.length,
                             itemBuilder: (context, i) => StaggeredReveal(

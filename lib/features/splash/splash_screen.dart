@@ -9,7 +9,7 @@ class SplashScreen extends StatelessWidget {
       child: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(ElaSize.v32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -17,20 +17,20 @@ class SplashScreen extends StatelessWidget {
                   'COMPAGNON DE LECTURE',
                   style: Theme.of(
                     context,
-                  ).textTheme.labelSmall?.copyWith(letterSpacing: 3),
+                  ).textTheme.labelSmall?.copyWith(letterSpacing: ElaSize.v3),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: ElaSize.v48),
                 const Bookplate(),
-                const SizedBox(height: 24),
+                const SizedBox(height: ElaSize.v24),
                 Text('Ela', style: Theme.of(context).textTheme.displayLarge),
-                const SizedBox(height: 12),
+                const SizedBox(height: ElaSize.v12),
                 Text(
                   'Les livres se rencontrent ici.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: ElaSize.v48),
                 const Folio('I'),
               ],
             ),

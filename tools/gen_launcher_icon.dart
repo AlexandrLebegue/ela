@@ -4,14 +4,14 @@
 //
 //   dart run tools/gen_launcher_icon.dart
 //
-// Icône : carré papier aux coins arrondis, disque doré, livre ouvert.
+// Icône : carré papier aux coins arrondis, reliure bordeaux, livre ouvert.
 
 import 'dart:io';
 import 'dart:typed_data';
 
-const _paper = [246, 239, 227, 255];
-const _gold = [201, 151, 79, 255];
-const _page = [255, 253, 246, 255];
+const _paper = [248, 244, 235, 255];
+const _gold = [112, 59, 67, 255];
+const _page = [255, 252, 245, 255];
 
 void main() {
   final targets = {
@@ -28,7 +28,7 @@ void main() {
   });
 }
 
-/// Rendu 2×2 supersamplé : fond papier arrondi, disque doré, livre ouvert.
+/// Rendu 2×2 supersamplé : fond papier arrondi, reliure bordeaux, livre ouvert.
 Uint8List _render(int size) {
   final ss = 2;
   final n = size * ss;

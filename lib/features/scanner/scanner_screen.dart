@@ -211,16 +211,37 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                 subtitle: 'Un livre entre vos mains. Toutes ses voix ici.',
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: ElaSize.v24),
                 child: AnimatedSwitcher(
-                  duration: ElaMotion.page,
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : ElaMotion.page,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, .06),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: ScaleTransition(
+                        scale: Tween<double>(
+                          begin: .94,
+                          end: 1,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
+                  ),
                   child: _identified != null
                       ? Padding(
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(ElaSize.v24),
                           child: Column(
                             children: [
-                              BookCover(book: _identified!, width: 110),
-                              const SizedBox(height: 16),
+                              BookCover(
+                                book: _identified!,
+                                width: ElaSize.v110,
+                              ),
+                              const SizedBox(height: ElaSize.v16),
                               Text(
                                 _identified!.title,
                                 style: Theme.of(context).textTheme.titleLarge,
@@ -253,18 +274,20 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                               IgnorePointer(
                                 child: Center(
                                   child: Container(
-                                    margin: const EdgeInsets.all(24),
-                                    height: 140,
+                                    margin: const EdgeInsets.all(ElaSize.v24),
+                                    height: ElaSize.v140,
                                     decoration: BoxDecoration(
                                       border: Border.all(
                                         color: ElaLampHalo.core,
-                                        width: 2,
+                                        width: ElaSize.v2,
                                       ),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                        ElaSize.v8,
+                                      ),
                                       boxShadow: const [
                                         BoxShadow(
                                           color: ElaLampHalo.glow,
-                                          blurRadius: 32,
+                                          blurRadius: ElaSize.v32,
                                         ),
                                       ],
                                     ),
@@ -294,10 +317,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(24),
-                child: Card(
+                padding: const EdgeInsets.all(ElaSize.v24),
+                child: PageCard(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(ElaSize.v16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -305,7 +328,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                           'Ou saisissez un ISBN',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: ElaSize.v8),
                         TextField(
                           controller: _isbn,
                           keyboardType: TextInputType.number,
@@ -318,7 +341,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen>
                           ),
                           onSubmitted: (_) => _lookup(_isbn.text),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: ElaSize.v12),
                         FilledButton.icon(
                           onPressed: _manualBusy
                               ? null

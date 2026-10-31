@@ -42,8 +42,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
     if (password.length < 6) {
-      setState(() =>
-          _error = 'Le mot de passe doit compter 6 caractères au moins.');
+      setState(
+        () => _error = 'Le mot de passe doit compter 6 caractères au moins.',
+      );
       return;
     }
     await _run(
@@ -55,14 +56,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Future<void> _signInWithGoogle() => _run(
-        _AuthMethod.google,
-        () => ref.read(authServiceProvider).signInWithGoogle(),
-      );
+    _AuthMethod.google,
+    () => ref.read(authServiceProvider).signInWithGoogle(),
+  );
 
   Future<void> _signInWithApple() => _run(
-        _AuthMethod.apple,
-        () => ref.read(authServiceProvider).signInWithApple(),
-      );
+    _AuthMethod.apple,
+    () => ref.read(authServiceProvider).signInWithApple(),
+  );
 
   Future<void> _run(_AuthMethod method, Future<void> Function() action) async {
     if (_busy != null) return;
@@ -70,7 +71,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _busy = method;
       _error = null;
     });
-    await action();
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = null;
+          _error = 'La connexion a été interrompue. Vous pouvez réessayer.';
+        });
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() => _busy = null);
     final profile = ref.read(authServiceProvider).currentProfile();
@@ -92,12 +103,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final profile = ref.watch(profileStreamProvider).value ??
+    final profile =
+        ref.watch(profileStreamProvider).value ??
         ref.read(authServiceProvider).currentProfile();
 
-    return Scaffold(
+    return BookScaffold(
       backgroundColor: scheme.surface,
-      appBar: AppBar(
+      appBar: BookAppBar(
         title: const Text('Votre espace'),
         actions: [
           if (!profile.isAnonymous)
@@ -111,27 +123,27 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       body: _busy != null
           ? Center(
               child: Padding(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(ElaSize.v28),
                 child: BreathingText(
                   'Connexion à votre compte Ela…',
                   style: TextStyle(
                     color: scheme.onSurfaceVariant,
-                    fontSize: 15,
+                    fontSize: ElaSize.v15,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
               ),
             )
           : profile.isAnonymous
-              ? _AnonymousView(
-                  emailController: _emailController,
-                  passwordController: _passwordController,
-                  error: _error,
-                  onEmail: _signInWithEmail,
-                  onGoogle: _signInWithGoogle,
-                  onApple: _signInWithApple,
-                )
-              : _ProfileView(profile: profile, onSignOut: _signOut),
+          ? _AnonymousView(
+              emailController: _emailController,
+              passwordController: _passwordController,
+              error: _error,
+              onEmail: _signInWithEmail,
+              onGoogle: _signInWithGoogle,
+              onApple: _signInWithApple,
+            )
+          : _ProfileView(profile: profile, onSignOut: _signOut),
     );
   }
 }
@@ -159,25 +171,28 @@ class _AnonymousView extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      padding: const EdgeInsets.fromLTRB(
+        ElaSize.v20,
+        ElaSize.v8,
+        ElaSize.v20,
+        ElaSize.v32,
+      ),
       children: [
-        const SizedBox(height: 24),
-        Center(
-          child: Icon(Icons.auto_awesome, size: 44, color: ElaColors.gold),
-        ),
-        const SizedBox(height: 14),
+        const SizedBox(height: ElaSize.v24),
+        const Center(child: Bookplate(icon: Icons.person_outline)),
+        const SizedBox(height: ElaSize.v14),
         Center(
           child: Text(
             'Bienvenue chez Ela',
             style: TextStyle(
-              fontFamily: 'Lora',
-              fontSize: 22,
+              fontFamily: ElaType.titleFamily,
+              fontSize: ElaSize.v22,
               fontWeight: FontWeight.w700,
               color: scheme.onSurface,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: ElaSize.v8),
         Center(
           child: Text(
             'Explorez librement, sans compte. Un compte Ela est demandé '
@@ -185,92 +200,102 @@ class _AnonymousView extends StatelessWidget {
             'bibliothèque dans le cloud, ou payer.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13.5,
-              height: 1.55,
+              fontSize: ElaSize.v13_5,
+              height: ElaSize.v1_55,
               color: scheme.onSurfaceVariant,
             ),
           ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: ElaSize.v28),
         Text(
           'Créer mon compte, ou me connecter',
           style: TextStyle(
-            fontFamily: 'Lora',
-            fontSize: 16,
+            fontFamily: ElaType.titleFamily,
+            fontSize: ElaSize.v16,
             fontWeight: FontWeight.w700,
             color: scheme.onSurface,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: ElaSize.v14),
         TextField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
-            hintText: 'Adresse e-mail',
+            labelText: 'Adresse e-mail',
             prefixIcon: Icon(Icons.mail_outline),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: ElaSize.v12),
         TextField(
           controller: passwordController,
           obscureText: true,
           decoration: const InputDecoration(
-            hintText: 'Mot de passe',
+            labelText: 'Mot de passe',
             prefixIcon: Icon(Icons.lock_outline),
           ),
         ),
         if (error != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+            padding: const EdgeInsets.fromLTRB(
+              ElaSize.v4,
+              ElaSize.v8,
+              ElaSize.v4,
+              ElaSize.v0,
+            ),
             child: Text(
               error!,
-              style: TextStyle(fontSize: 13, color: ElaColors.error),
+              style: TextStyle(
+                fontSize: ElaSize.v13,
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: ElaSize.v16),
         FilledButton(
           onPressed: onEmail,
           child: const Text('Continuer avec mon e-mail'),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: ElaSize.v18),
         Row(
           children: [
             Expanded(
-                child: Divider(
-                    color: scheme.outline.withValues(alpha: 0.4))),
+              child: Divider(color: scheme.outline.withValues(alpha: 0.4)),
+            ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: ElaSize.v10),
               child: Text(
                 'ou',
                 style: TextStyle(
-                    fontSize: 12.5, color: scheme.onSurfaceVariant),
+                  fontSize: ElaSize.v12_5,
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
             ),
             Expanded(
-                child: Divider(
-                    color: scheme.outline.withValues(alpha: 0.4))),
+              child: Divider(color: scheme.outline.withValues(alpha: 0.4)),
+            ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: ElaSize.v18),
         OutlinedButton.icon(
           onPressed: onGoogle,
-          icon: const Icon(Icons.account_circle_outlined, size: 18),
+          icon: const Icon(Icons.account_circle_outlined, size: ElaSize.v18),
           label: const Text('Continuer avec Google'),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: ElaSize.v10),
         OutlinedButton.icon(
           onPressed: onApple,
-          icon: const Icon(Icons.phone_iphone, size: 18),
+          icon: const Icon(Icons.phone_iphone, size: ElaSize.v18),
           label: const Text('Continuer avec Apple'),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: ElaSize.v24),
         Center(
           child: Text(
             'Démo — les connexions sont simulées, rien n’est envoyé '
             'nulle part.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11.5,
+              fontSize: ElaSize.v11_5,
               fontStyle: FontStyle.italic,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
@@ -293,95 +318,122 @@ class _ProfileView extends ConsumerWidget {
     final name = profile.displayNameOrEmail;
     final initial = name.substring(0, 1).toUpperCase();
     final entitlement = ref.watch(entitlementStreamProvider).value;
-    if (entitlement == null) return const SizedBox.shrink();
+    if (entitlement == null) {
+      return BookNotice(
+        title: ref.watch(entitlementStreamProvider).hasError
+            ? 'Votre compte attend une reprise'
+            : 'Ouverture de votre compte…',
+        loading: !ref.watch(entitlementStreamProvider).hasError,
+        action: TextButton(
+          onPressed: () => ref.invalidate(entitlementStreamProvider),
+          child: const Text('Réessayer'),
+        ),
+      );
+    }
     final entries =
         ref.watch(libraryEntriesProvider).value ?? const <LibraryEntry>[];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      padding: const EdgeInsets.fromLTRB(
+        ElaSize.v20,
+        ElaSize.v8,
+        ElaSize.v20,
+        ElaSize.v32,
+      ),
       children: [
-        const SizedBox(height: 28),
+        const SizedBox(height: ElaSize.v28),
         Center(
           child: Container(
-            width: 76,
-            height: 76,
+            width: ElaSize.v76,
+            height: ElaSize.v76,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: ElaColors.gold.withValues(alpha: 0.16),
-              border: Border.all(color: ElaColors.gold, width: 2),
+              color: Theme.of(
+                context,
+              ).colorScheme.secondary.withValues(alpha: 0.16),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.secondary,
+                width: ElaSize.v2,
+              ),
             ),
             child: Center(
               child: Text(
                 initial,
                 style: TextStyle(
-                  fontFamily: 'Lora',
-                  fontSize: 30,
+                  fontFamily: ElaType.titleFamily,
+                  fontSize: ElaSize.v30,
                   fontWeight: FontWeight.w700,
-                  color: ElaColors.sepiaDeep,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: ElaSize.v14),
         Center(
           child: Text(
             name,
             style: TextStyle(
-              fontFamily: 'Lora',
-              fontSize: 20,
+              fontFamily: ElaType.titleFamily,
+              fontSize: ElaSize.v20,
               fontWeight: FontWeight.w700,
               color: scheme.onSurface,
             ),
           ),
         ),
         if (profile.email != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: ElaSize.v4),
           Center(
             child: Text(
               profile.email!,
               style: TextStyle(
-                fontSize: 13.5,
+                fontSize: ElaSize.v13_5,
                 color: scheme.onSurfaceVariant,
               ),
             ),
           ),
         ],
-        const SizedBox(height: 12),
+        const SizedBox(height: ElaSize.v12),
         Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(
+              horizontal: ElaSize.v12,
+              vertical: ElaSize.v5,
+            ),
             decoration: BoxDecoration(
               color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(ElaSpace.radius),
             ),
             child: Text(
               'Membre d’Ela',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: ElaSize.v12,
                 fontWeight: FontWeight.w700,
                 color: scheme.onPrimaryContainer,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 28),
-        Card(
+        const SizedBox(height: ElaSize.v28),
+        PageCard(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(ElaSize.v16),
             child: Row(
               children: [
-                Icon(Icons.cloud_outlined,
-                    size: 22, color: scheme.onSurfaceVariant),
-                const SizedBox(width: 12),
+                Icon(
+                  Icons.cloud_outlined,
+                  size: ElaSize.v22,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: ElaSize.v12),
                 Expanded(
                   child: Text(
                     'Votre bibliothèque (Historique + Pile à Lire) est '
                     'sauvegardée sur cet appareil. La synchronisation cloud '
                     'est simulée pour la démo.',
                     style: TextStyle(
-                      fontSize: 13.5,
-                      height: 1.5,
+                      fontSize: ElaSize.v13_5,
+                      height: ElaSize.v1_5,
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
@@ -391,7 +443,7 @@ class _ProfileView extends ConsumerWidget {
           ),
         ),
         if (entitlement.isPremium) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: ElaSize.v12),
           _BilanCard(
             history: entries
                 .where((e) => e.section == LibrarySection.history)
@@ -400,31 +452,32 @@ class _ProfileView extends ConsumerWidget {
                 .where((e) => e.section == LibrarySection.toRead)
                 .length,
             tokens: entitlement.aiTokens,
-            reviews: ref
-                .read(sharedPreferencesProvider)
-                .getInt('ela.stats.reviews') ??
+            reviews:
+                ref
+                    .read(sharedPreferencesProvider)
+                    .getInt('ela.stats.reviews') ??
                 0,
           ),
         ] else
           _PremiumCard(
             onTap: () => GoRouter.maybeOf(context)?.push('/premium'),
           ),
-        const SizedBox(height: 24),
+        const SizedBox(height: ElaSize.v24),
         OutlinedButton.icon(
           onPressed: onSignOut,
           style: OutlinedButton.styleFrom(
-            foregroundColor: ElaColors.error,
+            foregroundColor: Theme.of(context).colorScheme.error,
           ),
-          icon: const Icon(Icons.logout, size: 18),
+          icon: const Icon(Icons.logout, size: ElaSize.v18),
           label: const Text('Se déconnecter'),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: ElaSize.v16),
         Center(
           child: Text(
             'Se déconnecter ne supprime rien de votre bibliothèque locale.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: ElaSize.v12,
               fontStyle: FontStyle.italic,
               color: scheme.onSurfaceVariant,
             ),
@@ -444,22 +497,26 @@ class _PremiumCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
+    return PageCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ElaSize.v16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.auto_awesome, size: 22, color: ElaColors.gold),
-                const SizedBox(width: 10),
+                Icon(
+                  Icons.auto_awesome,
+                  size: ElaSize.v22,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+                const SizedBox(width: ElaSize.v10),
                 Expanded(
                   child: Text(
                     'Ela Premium — 2 €/mois',
                     style: TextStyle(
-                      fontFamily: 'Lora',
-                      fontSize: 15.5,
+                      fontFamily: ElaType.titleFamily,
+                      fontSize: ElaSize.v15_5,
                       fontWeight: FontWeight.w700,
                       color: scheme.onSurface,
                     ),
@@ -467,21 +524,23 @@ class _PremiumCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ElaSize.v8),
             Text(
               '20 avis par livre, traduction des avis étrangers, Radar à '
               'économies, MatchMaker, sans pub, Bilan de curiosité exportable.',
               style: TextStyle(
-                fontSize: 13,
-                height: 1.5,
+                fontSize: ElaSize.v13,
+                height: ElaSize.v1_5,
                 color: scheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: ElaSize.v12),
             Align(
               alignment: Alignment.centerRight,
-              child: FilledButton.tonal(onPressed: onTap,
-                  child: const Text('Découvrir Premium')),
+              child: FilledButton.tonal(
+                onPressed: onTap,
+                child: const Text('Découvrir Premium'),
+              ),
             ),
           ],
         ),
@@ -507,23 +566,26 @@ class _BilanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
+    return PageCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ElaSize.v16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.insights_outlined,
-                    size: 22, color: scheme.onSurfaceVariant),
-                const SizedBox(width: 10),
+                Icon(
+                  Icons.insights_outlined,
+                  size: ElaSize.v22,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: ElaSize.v10),
                 Expanded(
                   child: Text(
                     'Bilan de curiosité',
                     style: TextStyle(
-                      fontFamily: 'Lora',
-                      fontSize: 15.5,
+                      fontFamily: ElaType.titleFamily,
+                      fontSize: ElaSize.v15_5,
                       fontWeight: FontWeight.w700,
                       color: scheme.onSurface,
                     ),
@@ -531,7 +593,7 @@ class _BilanCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: ElaSize.v12),
             Row(
               children: [
                 _Stat(label: 'Lus', value: formatInt(history)),
@@ -540,12 +602,15 @@ class _BilanCard extends StatelessWidget {
                 _Stat(label: 'Avis', value: formatInt(reviews)),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: ElaSize.v12),
             Align(
               alignment: Alignment.centerRight,
               child: OutlinedButton.icon(
                 onPressed: () => _exportCsv(context),
-                icon: const Icon(Icons.file_download_outlined, size: 17),
+                icon: const Icon(
+                  Icons.file_download_outlined,
+                  size: ElaSize.v17,
+                ),
                 label: const Text('Exporter en CSV'),
               ),
             ),
@@ -575,7 +640,10 @@ class _BilanCard extends StatelessWidget {
             children: [
               SelectableText(
                 csv,
-                style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                style: const TextStyle(
+                  fontSize: ElaSize.v13,
+                  fontFamily: ElaType.labelFamily,
+                ),
               ),
             ],
           ),
@@ -585,7 +653,9 @@ class _BilanCard extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: csv));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('CSV copié dans le presse-papier.')),
+                const SnackBar(
+                  content: Text('CSV copié dans le presse-papier.'),
+                ),
               );
             },
             child: const Text('Copier'),
@@ -611,23 +681,23 @@ class _Stat extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: ElaSize.v4),
         child: Column(
           children: [
             Text(
               value,
               style: TextStyle(
-                fontFamily: 'Lora',
-                fontSize: 20,
+                fontFamily: ElaType.titleFamily,
+                fontSize: ElaSize.v20,
                 fontWeight: FontWeight.w800,
                 color: scheme.onSurface,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: ElaSize.v2),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11.5,
+                fontSize: ElaSize.v11_5,
                 color: scheme.onSurfaceVariant,
               ),
             ),
