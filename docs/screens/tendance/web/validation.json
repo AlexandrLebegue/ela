@@ -1,0 +1,26 @@
+{
+  "url": "http://127.0.0.1:8240/",
+  "browser": "156.0.8078.4",
+  "serverStarted": false,
+  "viewport": {
+    "width": 412,
+    "height": 915
+  },
+  "compact": {
+    "width": 360,
+    "height": 640,
+    "reducedMotion": true
+  },
+  "network": "local assets over HTTP, remote covers blocked to verify offline edition",
+  "checks": [
+    "served release on :8240",
+    "four touch carousel positions",
+    "quick PAL persists correct ISBN",
+    "cover opens correct book",
+    "back to carousel",
+    "night theme",
+    "compact swipe and vertical scroll",
+    "semantic heading and carousel buttons"
+  ],
+  "pageErrors": []
+}

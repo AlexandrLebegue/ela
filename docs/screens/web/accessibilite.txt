@@ -1,22 +1,32 @@
+- text: N°1 · LE CHOIX DES LECTEURS
 - group:
-  - text: CHAPITRE I · ELA
-  - button "Lire de nuit"
+  - text: ELA / LE GOÛT DES PAGES
   - heading "Tendance" [level=2]
-  - text: Les livres qui passent de main en main.
-  - button "Radar Occasions à prix doux"
-  - button "MatchMaker Votre prochaine lecture"
+  - button "Lire de nuit"
+  - text: Votre prochaine histoire commence ici. À LA UNE DE VOS ENVIES
+  - button "Ouvrir Les Sept Maris d’Evelyn Hugo, Taylor Jenkins Reid"
+  - button "Ouvrir Le Petit Prince, Antoine de Saint-Exupéry"
+  - button "Ouvrir La Femme de chambre, Freida McFadden"
+  - text: N°1 · LE CHOIX DES LECTEURS Le Petit Prince Antoine de Saint-Exupéry Un tout petit monde. Une immense histoire d’amitié.
+  - button "Pile à lire"
+  - text: 14 900 lecteurs ont ouvert ces pages
+  - 'button "Livre 1 sur 5 : Le Petit Prince"'
+  - 'button "Livre 2 sur 5 : La Femme de chambre"'
+  - 'button "Livre 3 sur 5 : Verity"'
+  - 'button "Livre 4 sur 5 : L’Alchimiste"'
+  - 'button "Livre 5 sur 5 : Les Sept Maris d’Evelyn Hugo"'
   - group:
     - button "Tous"
     - button "Classiques"
     - button "Contemporains"
     - button "Thrillers"
     - button "Fantasy"
-  - button "N°1 Couverture de Le Petit Prince Le Petit Prince Antoine de Saint-Exupéry 🏺 Classique intemporel 14 900 lecteurs d’Ela"
-  - button "N°2 Couverture de La Femme de chambre La Femme de chambre Freida McFadden 🔥 Phénomène 12 480 lecteurs d’Ela"
-  - button "N°3 Couverture de Verity Verity Colleen Hoover 🔥 Phénomène 11 230 lecteurs d’Ela"
-  - button "N°4 Couverture de L’Alchimiste L’Alchimiste Paulo Coelho 📈 Tendance 10 320 lecteurs d’Ela"
-  - button "N°5 Couverture de Les Sept Maris d’Evelyn Hugo Les Sept Maris d’Evelyn Hugo Taylor Jenkins Reid 📈 Tendance 9 870 lecteurs d’Ela"
-  - button "N°6 Couverture de Les Misérables Les Misérables Victor Hugo 🏺 Classique intemporel 9 410 lecteurs d’Ela"
+  - text: LE TOP 10 DES LECTEURS
+  - heading "En hausse cette semaine" [level=2]
+  - group:
+    - button "N°1, Le Petit Prince, Antoine de Saint-Exupéry. Ouvrir la fiche de lecture"
+    - button "N°2, La Femme de chambre, Freida McFadden. Ouvrir la fiche de lecture"
+    - button "N°3, Verity, Colleen Hoover. Ouvrir la fiche de lecture"
 - button "Tendance"
 - button "Scanner"
 - button "Bibliothèque"

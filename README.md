@@ -19,8 +19,7 @@ flutter build apk --debug      # → build/app/outputs/flutter-apk/app-debug.apk
 ### Tests
 
 ```bash
-flutter test --concurrency=1   # 158 tests : 29 historiques + 120 scènes
-                               # + configuration du banc + 8 régressions
+flutter test --concurrency=1   # 169 tests, dont le carrousel et 4 goldens
 flutter analyze                # zéro issue
 ```
 
@@ -29,8 +28,10 @@ variable d'env `FLUTTER_TEST` (`lib/core/flags.dart`).
 
 ## Ce que fait l'app (phase 1)
 
-- **Tendance** — listes par catégorie, rangs N°1-3 dorés, apparition en
-  cascade, squelettes « encre » pendant la curation simulée.
+- **Tendance** — héros coverflow tactile, ambiance issue de la couverture,
+  défilement auto avec pause et réduction des animations, transition Hero vers
+  la fiche, ajout rapide PAL et rayons horizontaux (top 10, classiques, courts).
+  Filtres par catégorie, jour/nuit et repli illustré hors ligne.
 - **Scanner** — EAN-13 (`mobile_scanner`) avec halo « lampe de chevet »,
   dégradation propre sans caméra/permission, saisie ISBN manuelle ;
   l'ISBN connu ouvre la fiche, l'inconnu est averti.
@@ -54,6 +55,11 @@ variable d'env `FLUTTER_TEST` (`lib/core/flags.dart`).
 
 
 ## Refonte « livre » et livrables visuels
+
+**Nouvelle Tendance** : [avant / après](docs/screens/tendance/avant-apres.png) ·
+[séquence du carrousel](docs/screens/tendance/sequence-jour.png) ·
+[captures et reproduction](docs/screens/tendance/README.md).
+Le build `build/web` est servi par le serveur ProxBoss existant sur **:8240**.
 
 [Avant / après](docs/screens/avant-apres.png) ·
 [Planche jour](docs/screens/planche-jour.png) ·

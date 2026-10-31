@@ -1,5 +1,10 @@
 # Carnet visuel Ela
 
+La nouvelle page **Tendance avec carrousel** a son [carnet dédié](tendance/README.md),
+avec références avant, captures jour/nuit, quatre positions successives,
+goldens et validation du build réellement servi sur **:8240**.
+Les 120 scènes ci-dessous documentent la refonte « livre » précédente.
+
 - [Avant / après — six parcours](avant-apres.png)
 - [Planche jour — 60 scènes](planche-jour.png)
 - [Planche nuit — 60 scènes](planche-nuit.png)
