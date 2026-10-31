@@ -21,9 +21,10 @@ import '../premium/premium_screen.dart';
 /// Fiche livre (étape 3) : en-tête + 3 onglets en fondu doux —
 /// Synthèse IA & Presse / Le Web / La Communauté — + PAL / Acheter.
 class BookDetailScreen extends ConsumerStatefulWidget {
-  const BookDetailScreen({super.key, required this.isbn});
+  const BookDetailScreen({super.key, required this.isbn, this.heroTag});
 
   final String isbn;
+  final String? heroTag;
 
   @override
   ConsumerState<BookDetailScreen> createState() => _BookDetailScreenState();
@@ -236,6 +237,7 @@ class _BookDetailScreenState extends ConsumerState<BookDetailScreen> {
         child: Column(
           children: [
             _DetailHeader(
+              heroTag: widget.heroTag,
               book: book,
               inPal: inPal,
               busy: _addingToPal,
@@ -299,6 +301,7 @@ class _DetailHeader extends StatelessWidget {
     required this.onTogglePal,
     required this.onPurchase,
     this.coverKey,
+    this.heroTag,
   });
 
   final Book book;
@@ -308,6 +311,7 @@ class _DetailHeader extends StatelessWidget {
   final VoidCallback onTogglePal;
   final VoidCallback onPurchase;
   final GlobalKey? coverKey;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -325,7 +329,14 @@ class _DetailHeader extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BookCover(key: coverKey, book: book, width: ElaSize.v110),
+              Hero(
+                tag: heroTag ?? 'book-${book.isbn}',
+                child: BookCover(
+                  key: coverKey,
+                  book: book,
+                  width: ElaSize.v110,
+                ),
+              ),
               const SizedBox(width: ElaSize.v16),
               Expanded(
                 child: Column(

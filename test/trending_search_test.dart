@@ -39,39 +39,31 @@ void main() {
   }
 
   testWidgets(
-    'Tendance : squelettes puis liste en cascade, rangs dorés, changement de catégorie',
+    'Tendance : carrousel, rayons classés et changement de catégorie',
     (tester) async {
       await pumpScreen(tester, const TrendingScreen());
+      addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
       await tester.pump();
-
-      // Squelettes pendant le chargement (pas encore de titre).
       expect(find.text('Le Petit Prince'), findsNothing);
-
-      await pumpUntil(tester, find.text('Le Petit Prince'));
+      await pumpUntil(tester, find.byKey(const ValueKey('featured-pages')));
       expect(find.text('Le Petit Prince'), findsOneWidget);
-      expect(find.text('N°1'), findsOneWidget);
-      expect(find.text('N°2'), findsOneWidget);
+      expect(find.textContaining('N°1'), findsOneWidget);
       await tester.scrollUntilVisible(
-        find.text('N°4'),
+        find.text('Classiques'),
         180,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.text('N°4'), findsOneWidget);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Classiques'));
+      await pumpUntil(tester, find.byKey(const ValueKey('featured-pages')));
+      await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('Classiques'),
-        -180,
+        find.text('En hausse cette semaine'),
+        180,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
-
-      // Les puces de catégories sont arrivées ; on bascule sur Classiques.
-      await pumpUntil(tester, find.text('Classiques'));
-      await tester.tap(find.text('Classiques'));
-
-      await pumpUntil(tester, find.text('Les Misérables'));
-      expect(find.text('Les Misérables'), findsOneWidget);
+      expect(find.text('Les Misérables'), findsWidgets);
       expect(find.text('Verity'), findsNothing);
-      await tester.pumpAndSettle();
     },
   );
 

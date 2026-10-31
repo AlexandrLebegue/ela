@@ -279,8 +279,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/livre/:isbn',
-        builder: (context, state) =>
-            BookDetailScreen(isbn: state.pathParameters['isbn']!),
+        builder: (context, state) => BookDetailScreen(
+          isbn: state.pathParameters['isbn']!,
+          heroTag: state.extra is String ? state.extra as String : null,
+        ),
       ),
       GoRoute(
         path: '/compte',

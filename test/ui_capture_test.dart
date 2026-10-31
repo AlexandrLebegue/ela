@@ -98,7 +98,14 @@ void main() {
     Scene(
       '07-tendance-classiques',
       route: '/tendance',
-      action: (t) => tapLabel(t, 'Classiques'),
+      action: (t) async {
+        await t.scrollUntilVisible(
+          find.text('Classiques'),
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tapLabel(t, 'Classiques');
+      },
     ),
     const Scene('08-recherche', route: '/recherche'),
     Scene(
