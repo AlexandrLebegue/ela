@@ -123,6 +123,9 @@ sans erreur, `flutter test` vert, `flutter build apk --debug` OK, puis commit.
   rendu, saisie ISBN, recherche et retour conservant la requête vérifiés ;
   rapport et trois captures dans `docs/screens/web`. Analyse sans issue,
   158 tests verts et 121 contrôles compacts verts. Aucun flutter_tester restant.
-- **Étape 4 en cours** : APK release avec certificat vérifié contre la release
-  GitHub `v0.1.0` (SHA-256 : 805647876be2375c1aedf9004993b58b9cfa6a5a3400e07c8c03846aaf414d6a).
-  Aucune release GitHub ne sera créée.
+- **Étape 4 terminée** : build APK release réussi en 145,1 s (71,7 Mo), copié
+  dans `dist/ela.apk`, checksum dans `dist/ela.apk.sha256`. Certificat comparé
+  à l'APK de la release GitHub `v0.1.0` : identique. Permissions INTERNET et
+  CAMERA vérifiées dans le manifeste compilé. Aucun daemon Gradle ni tester
+  restant. [Rapport final](docs/VALIDATION-UI.md). Livraison : commit/push puis
+  réveil final de ProxBoss, sans création de release GitHub.
