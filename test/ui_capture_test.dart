@@ -269,8 +269,9 @@ void main() {
         (t) async {
           final issues = <String>[];
           final old = FlutterError.onError;
-          if (auditBefore)
+          if (auditBefore) {
             FlutterError.onError = (d) => issues.add(d.toString());
+          }
           addTearDown(() => FlutterError.onError = old);
           t.platformDispatcher.textScaleFactorTestValue = compact ? 1.3 : 1;
           addTearDown(t.platformDispatcher.clearTextScaleFactorTestValue);
@@ -291,8 +292,9 @@ void main() {
           container
               .read(themeModeProvider.notifier)
               .set(dark ? ThemeMode.dark : ThemeMode.light);
-          if (scene.route != null)
+          if (scene.route != null) {
             container.read(routerProvider).go(scene.route!);
+          }
           final boundary = GlobalKey();
           await t.pumpWidget(
             UncontrolledProviderScope(
@@ -334,10 +336,11 @@ void main() {
               File(
                 '${dir.path}/${scene.name}.png',
               ).writeAsBytesSync(bytes.buffer.asUint8List());
-              if (issues.isNotEmpty)
+              if (issues.isNotEmpty) {
                 File(
                   '${dir.path}/${scene.name}-issues.txt',
                 ).writeAsStringSync(issues.join('\n\n'));
+              }
             });
           }
           await t.pumpWidget(const SizedBox.shrink());

@@ -68,7 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final last = _page == _items.length - 1;
-    return Scaffold(
+    return BookScaffold(
       backgroundColor: scheme.surface,
       body: SafeArea(
         child: Column(
@@ -108,10 +108,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             width: i == _page ? 20 : 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: BorderRadius.circular(
+                                ElaSpace.radius,
+                              ),
                               color: i == _page
-                                  ? ElaColors.gold
-                                  : ElaColors.lineLight,
+                                  ? scheme.primary
+                                  : scheme.outline,
                             ),
                           ),
                         ),
@@ -122,11 +124,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed:
-                              _page == 0 ? null : () => _go(_page - 1),
+                          onPressed: _page == 0 ? null : () => _go(_page - 1),
                           style: OutlinedButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             side: BorderSide(color: scheme.outlineVariant),
                           ),
                           child: const Text('Retour'),
@@ -144,18 +144,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             }
                           },
                           style: FilledButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 14),
-                            backgroundColor: ElaColors.gold,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.secondary,
                             // Encre sur or (≈ 5:1) plutôt que blanc (2,6:1) :
                             // accessibilité contraste.
-                            foregroundColor: ElaColors.ink,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onSecondary,
                           ),
                           child: Text(
                             last ? 'Commencer à lire' : 'Suivant',
                             style: const TextStyle(
-                                fontFamily: 'Lora',
-                                fontWeight: FontWeight.w700),
+                              fontFamily: ElaType.titleFamily,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -191,46 +195,42 @@ class _OnboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final gold = isDark ? ElaColors.nightSepia : ElaColors.gold;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: gold.withValues(alpha: 0.16),
-                border: Border.all(color: gold, width: 1.5),
-              ),
-              child: Icon(item.icon, color: gold, size: 44),
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'OUVRIR LE LIVRE',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    letterSpacing: 2,
+                    color: scheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Bookplate(icon: item.icon),
+                const SizedBox(height: 32),
+                Text(
+                  item.title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineLarge,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  item.body,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const Folio('·'),
+              ],
             ),
-            const SizedBox(height: 28),
-            Text(
-              item.title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Lora',
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              item.body,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.55,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

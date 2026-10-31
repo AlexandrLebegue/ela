@@ -8,7 +8,6 @@ import 'package:ela/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -25,7 +24,6 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
   Future<void> settleAll(WidgetTester tester) async {
@@ -41,7 +39,7 @@ void main() {
     Map<String, Object>? seed,
   }) {
     SharedPreferences.setMockInitialValues(seed ?? {});
-    return       SharedPreferences.getInstance().then((prefs) async {
+    return SharedPreferences.getInstance().then((prefs) async {
       // Viewport haut (390×2000) : les ListViews paresseuses construisent
       // alors toute leur hauteur, ce qui rend chaque élément tappable.
       tester.view.physicalSize = const Size(1170, 6000);
@@ -51,10 +49,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: MaterialApp(
-            theme: ElaTheme.light,
-            home: home,
-          ),
+          child: MaterialApp(theme: ElaTheme.light, home: home),
         ),
       );
       await settleAll(tester);
@@ -79,8 +74,9 @@ void main() {
       )
       .length;
 
-  testWidgets('Gratuit : 1 jeton dépensé débloque la fiche complète',
-      (tester) async {
+  testWidgets('Gratuit : 1 jeton dépensé débloque la fiche complète', (
+    tester,
+  ) async {
     await pump(tester, const BookDetailScreen(isbn: '9782070667918'));
 
     expect(find.text('Débloquer — 1 jeton'), findsOneWidget);
@@ -103,8 +99,9 @@ void main() {
     await settleAll(tester);
   });
 
-  testWidgets('Premium : 5 presse + 15 web, avis étrangers traduits',
-      (tester) async {
+  testWidgets('Premium : 5 presse + 15 web, avis étrangers traduits', (
+    tester,
+  ) async {
     await pump(
       tester,
       const BookDetailScreen(isbn: '9782070667918'),
@@ -122,8 +119,9 @@ void main() {
     expect(find.textContaining('Traduit par Ela'), findsNWidgets(2));
   });
 
-  testWidgets('Paywall : abonnement simulé → Premium, puis annulation',
-      (tester) async {
+  testWidgets('Paywall : abonnement simulé → Premium, puis annulation', (
+    tester,
+  ) async {
     await pump(tester, const PremiumScreen());
 
     expect(find.text('Passer Premium — 2 €/mois'), findsOneWidget);
@@ -139,8 +137,9 @@ void main() {
     await pumpUntil(tester, find.text('Passer Premium — 2 €/mois'));
   });
 
-  testWidgets('Radar : teaser gratuit, liste complète en Premium',
-      (tester) async {
+  testWidgets('Radar : teaser gratuit, liste complète en Premium', (
+    tester,
+  ) async {
     // Gratuit : 1 affaire réelle + floutées + invitation.
     await pump(tester, const RadarScreen());
     expect(find.textContaining('L’essentiel du Radar'), findsOneWidget);
@@ -151,37 +150,36 @@ void main() {
     // Premium : 6 affaires, badges de remise, rien de flouté.
     await pump(tester, const RadarScreen(), seed: premiumSeed);
     expect(find.textContaining('Occasion floutée'), findsNothing);
-    final badges = find
-        .textContaining(RegExp(r'^−\d+ %$'))
-        .evaluate()
-        .length;
+    final badges = find.textContaining(RegExp(r'^−\d+ %$')).evaluate().length;
     expect(badges, 6);
   });
 
-  testWidgets('MatchMaker : matches d’après l’étagère, verrou gratuit',
-      (tester) async {
+  testWidgets('MatchMaker : matches d’après l’étagère, verrou gratuit', (
+    tester,
+  ) async {
     // Étagère vide → état vide.
     await pump(tester, const MatchMakerScreen());
-    expect(
-        find.textContaining('Votre étagère est vide'), findsOneWidget);
+    expect(find.textContaining('Votre étagère est vide'), findsOneWidget);
 
     // Avec 2 livres + Premium : des scores de compatibilité affichés.
-    await pump(tester, const MatchMakerScreen(),
-        seed: {...premiumSeed, ...librarySeed});
-    expect(
-        find.textContaining(RegExp(r'^\d+ %$')), findsWidgets);
+    await pump(
+      tester,
+      const MatchMakerScreen(),
+      seed: {...premiumSeed, ...librarySeed},
+    );
+    expect(find.textContaining(RegExp(r'^\d+ %$')), findsWidgets);
     expect(find.textContaining('Même genre'), findsWidgets);
     expect(find.textContaining('Match Premium — score masqué'), findsNothing);
 
     // Gratuit : les matchs au-delà des 2 premiers sont verrouillés.
-    await pump(tester, const MatchMakerScreen(),
-        seed: librarySeed);
+    await pump(tester, const MatchMakerScreen(), seed: librarySeed);
     expect(find.textContaining('Match Premium — score masqué'), findsWidgets);
     expect(find.text('Voir Premium — 2 €/mois'), findsOneWidget);
   });
 
-  testWidgets('Bilan de curiosité (Premium) : stats + export CSV',
-      (tester) async {
+  testWidgets('Bilan de curiosité (Premium) : stats + export CSV', (
+    tester,
+  ) async {
     // Compte connecté + Premium + 2 livres lus/à lire → bilan sur le compte.
     await pump(
       tester,
@@ -207,7 +205,8 @@ void main() {
     await tester.tap(find.text('Copier'));
     await tester.pump();
     expect(
-        find.textContaining('CSV copié dans le presse-papier'),
-        findsOneWidget);
+      find.textContaining('CSV copié dans le presse-papier'),
+      findsOneWidget,
+    );
   });
 }

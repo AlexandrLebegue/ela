@@ -4,7 +4,6 @@ import 'package:ela/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -12,7 +11,6 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
   Future<void> pump(
@@ -31,10 +29,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: MaterialApp(
-            theme: ElaTheme.light,
-            home: home,
-          ),
+          child: MaterialApp(theme: ElaTheme.light, home: home),
         ),
       );
       await tester.pumpAndSettle();
@@ -61,20 +56,21 @@ void main() {
     return SharedPreferences.getInstance().then((prefs) async {
       final scope = ProviderScope(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-        child: Builder(builder: (context) {
-          final ref = ProviderScope.containerOf(context);
-          return MaterialApp.router(
-            theme: ElaTheme.light,
-            routerConfig: ref.read(routerProvider),
-          );
-        }),
+        child: Builder(
+          builder: (context) {
+            final ref = ProviderScope.containerOf(context);
+            return MaterialApp.router(
+              theme: ElaTheme.light,
+              routerConfig: ref.read(routerProvider),
+            );
+          },
+        ),
       );
       await tester.pumpWidget(scope);
       await tester.pump();
       ProviderScope.containerOf(
-              tester.element(find.byType(MaterialApp)))
-          .read(routerProvider)
-          .go(location);
+        tester.element(find.byType(MaterialApp)),
+      ).read(routerProvider).go(location);
       await settleAll(tester);
     });
   }
@@ -87,14 +83,13 @@ void main() {
     expect(find, findsWidgets);
   }
 
-  testWidgets('Anonyme : invite lazy registration + 3 méthodes', (tester) async {
+  testWidgets('Anonyme : invite lazy registration + 3 méthodes', (
+    tester,
+  ) async {
     await pump(tester, const AccountScreen());
 
     expect(find.text('Bienvenue chez Ela'), findsOneWidget);
-    expect(
-      find.textContaining('publier un avis'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('publier un avis'), findsOneWidget);
     expect(find.text('Continuer avec mon e-mail'), findsOneWidget);
     expect(find.text('Continuer avec Google'), findsOneWidget);
     await tester.ensureVisible(find.text('Continuer avec Apple'));
@@ -102,8 +97,9 @@ void main() {
     expect(find.text('Continuer avec Apple'), findsOneWidget);
   });
 
-  testWidgets('E-mail : validation douce, puis profil + déconnexion',
-      (tester) async {
+  testWidgets('E-mail : validation douce, puis profil + déconnexion', (
+    tester,
+  ) async {
     await pump(tester, const AccountScreen());
 
     // E-mail invalide → erreur douce, pas de connexion.
@@ -149,8 +145,9 @@ void main() {
     expect(find.text('Membre d’Ela'), findsOneWidget);
   });
 
-  testWidgets('Profil persisté : on arrive connecté sans se reconnecter',
-      (tester) async {
+  testWidgets('Profil persisté : on arrive connecté sans se reconnecter', (
+    tester,
+  ) async {
     await pump(
       tester,
       const AccountScreen(),

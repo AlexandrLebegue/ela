@@ -1,11 +1,5 @@
-import 'dart:io';
+import 'flags_stub.dart' if (dart.library.io) 'flags_io.dart' as platform;
 
-/// Vrai uniquement quand l'app code tourne sous `flutter test`.
-///
-/// `flutter test` définit la variable d'environnement `FLUTTER_TEST=true`
-/// dans le processus de test — ce n'est pas un `--dart-define`, donc
-/// `bool.fromEnvironment('FLUTTER_TEST')` renvoie `false` (vérifié
-/// empiriquement). Ce helper centralise la détection pour éviter d'appeler
-/// la caméra, le réseau, etc., pendant les tests.
-bool get isRunningUnderFlutterTest =>
-    Platform.environment['FLUTTER_TEST'] == 'true';
+/// Le navigateur ne charge jamais dart:io. Les tests widgets coupent réseau
+/// et caméra ; aucune variable système n'est consultée sur le web.
+bool get isRunningUnderFlutterTest => platform.isFlutterTest;

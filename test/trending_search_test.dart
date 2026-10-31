@@ -5,7 +5,6 @@ import 'package:ela/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -13,7 +12,6 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
   Future<void> pumpScreen(WidgetTester tester, Widget screen) {
@@ -21,10 +19,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: MaterialApp(
-            theme: ElaTheme.light,
-            home: screen,
-          ),
+          child: MaterialApp(theme: ElaTheme.light, home: screen),
         ),
       );
     });
@@ -44,53 +39,57 @@ void main() {
   }
 
   testWidgets(
-      'Tendance : squelettes puis liste en cascade, rangs dorés, changement de catégorie',
-      (tester) async {
-    await pumpScreen(tester, const TrendingScreen());
-    await tester.pump();
+    'Tendance : squelettes puis liste en cascade, rangs dorés, changement de catégorie',
+    (tester) async {
+      await pumpScreen(tester, const TrendingScreen());
+      await tester.pump();
 
-    // Squelettes pendant le chargement (pas encore de titre).
-    expect(find.text('Le Petit Prince'), findsNothing);
+      // Squelettes pendant le chargement (pas encore de titre).
+      expect(find.text('Le Petit Prince'), findsNothing);
 
-    await pumpUntil(tester, find.text('Le Petit Prince'));
-    expect(find.text('Le Petit Prince'), findsOneWidget);
-    expect(find.text('N°1'), findsOneWidget);
-    expect(find.text('N°2'), findsOneWidget);
-    expect(find.text('N°4'), findsOneWidget);
+      await pumpUntil(tester, find.text('Le Petit Prince'));
+      expect(find.text('Le Petit Prince'), findsOneWidget);
+      expect(find.text('N°1'), findsOneWidget);
+      expect(find.text('N°2'), findsOneWidget);
+      expect(find.text('N°4'), findsOneWidget);
 
-    // Les puces de catégories sont arrivées ; on bascule sur Classiques.
-    await pumpUntil(tester, find.text('Classiques'));
-    await tester.tap(find.text('Classiques'));
+      // Les puces de catégories sont arrivées ; on bascule sur Classiques.
+      await pumpUntil(tester, find.text('Classiques'));
+      await tester.tap(find.text('Classiques'));
 
-    await pumpUntil(tester, find.text('Les Misérables'));
-    expect(find.text('Les Misérables'), findsOneWidget);
-    expect(find.text('Verity'), findsNothing);
-    await tester.pumpAndSettle();
-  });
+      await pumpUntil(tester, find.text('Les Misérables'));
+      expect(find.text('Les Misérables'), findsOneWidget);
+      expect(find.text('Verity'), findsNothing);
+      await tester.pumpAndSettle();
+    },
+  );
 
-  testWidgets('Recherche : résultats par auteur, puis retour au hint au clear',
-      (tester) async {
-    await pumpScreen(tester, const SearchScreen());
-    await tester.pump();
+  testWidgets(
+    'Recherche : résultats par auteur, puis retour au hint au clear',
+    (tester) async {
+      await pumpScreen(tester, const SearchScreen());
+      await tester.pump();
 
-    expect(find.textContaining('Cherchez parmi'), findsOneWidget);
+      expect(find.textContaining('Cherchez parmi'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'Camus');
-    await tester.pump(const Duration(milliseconds: 400)); // debounce
+      await tester.enterText(find.byType(TextField), 'Camus');
+      await tester.pump(const Duration(milliseconds: 400)); // debounce
 
-    await pumpUntil(tester, find.text('L’Étranger'));
-    expect(find.text('L’Étranger'), findsOneWidget);
-    expect(find.textContaining('Albert Camus'), findsOneWidget);
+      await pumpUntil(tester, find.text('L’Étranger'));
+      expect(find.text('L’Étranger'), findsOneWidget);
+      expect(find.textContaining('Albert Camus'), findsOneWidget);
 
-    // Clear → debounce 350 ms puis fondu 300 ms vers le hint.
-    await tester.tap(find.byIcon(Icons.clear));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Cherchez parmi'), findsOneWidget);
-    expect(find.text('L’Étranger'), findsNothing);
-  });
+      // Clear → debounce 350 ms puis fondu 300 ms vers le hint.
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Cherchez parmi'), findsOneWidget);
+      expect(find.text('L’Étranger'), findsNothing);
+    },
+  );
 
-  testWidgets('Recherche : aucun résultat pour une requête inconnue',
-      (tester) async {
+  testWidgets('Recherche : aucun résultat pour une requête inconnue', (
+    tester,
+  ) async {
     await pumpScreen(tester, const SearchScreen());
     await tester.pump();
 

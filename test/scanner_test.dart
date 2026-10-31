@@ -3,7 +3,6 @@ import 'package:ela/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -11,7 +10,6 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({'ela.onboarded': true});
-    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
   Future<void> pumpApp(WidgetTester tester) {
@@ -45,8 +43,9 @@ void main() {
     expect(find.text('Ou saisissez un ISBN'), findsOneWidget);
   });
 
-  testWidgets('La saisie manuelle d’ISBN ouvre la fiche du livre',
-      (tester) async {
+  testWidgets('La saisie manuelle d’ISBN ouvre la fiche du livre', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await settleAll(tester);
 
@@ -70,7 +69,10 @@ void main() {
     await tester.tap(find.text('Scanner').last);
     await settleAll(tester);
 
-    await tester.enterText(find.widgetWithText(TextField, '978…'), '9999999999999');
+    await tester.enterText(
+      find.widgetWithText(TextField, '978…'),
+      '9999999999999',
+    );
     await tester.pump();
     await tester.tap(find.text('Chercher').last);
     await settleAll(tester);

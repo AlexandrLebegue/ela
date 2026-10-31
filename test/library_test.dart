@@ -5,7 +5,6 @@ import 'package:ela/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -13,7 +12,6 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({'ela.onboarded': true});
-    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
   Future<ProviderContainer> pumpApp(WidgetTester tester) {
@@ -45,7 +43,8 @@ void main() {
     // d'onboarding (sinon l'app démarrerait sur l'onboarding).
     SharedPreferences.setMockInitialValues({
       'ela.onboarded': true,
-      'ela.library': '[{"isbn":"9782070667918","section":"history",'
+      'ela.library':
+          '[{"isbn":"9782070667918","section":"history",'
           '"addedAt":"2026-10-20T10:00:00.000"},'
           '{"isbn":"9782070409236","section":"history",'
           '"addedAt":"2026-10-28T09:00:00.000"},'
@@ -76,8 +75,9 @@ void main() {
     expect(mis.dy, lessThan(prince.dy));
   });
 
-  testWidgets('Le vol de couverture notifie la réception par la barre',
-      (tester) async {
+  testWidgets('Le vol de couverture notifie la réception par la barre', (
+    tester,
+  ) async {
     final container = await pumpApp(tester);
     await settleAll(tester);
 
@@ -94,8 +94,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       final flying = tester
           .widgetList(
-            find.byWidgetPredicate((w) =>
-                w.runtimeType.toString().contains('_FlyingCover')),
+            find.byWidgetPredicate(
+              (w) => w.runtimeType.toString().contains('_FlyingCover'),
+            ),
           )
           .isNotEmpty;
       if (flying) flyingSeen = true;
@@ -113,8 +114,9 @@ void main() {
     // Et le livre est bien dans la PAL.
     final entries = container.read(libraryEntriesProvider).value;
     expect(
-      entries?.any((e) =>
-          e.isbn == '9782070667918' && e.section == LibrarySection.toRead),
+      entries?.any(
+        (e) => e.isbn == '9782070667918' && e.section == LibrarySection.toRead,
+      ),
       isTrue,
     );
   });

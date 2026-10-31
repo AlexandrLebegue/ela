@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../animations.dart';
-import 'tokens.dart';
 
 /// Papier immobile, grain calculé une fois par taille/couleur, isolé des
 /// animations de contenu par une frontière de rendu.
@@ -192,42 +191,37 @@ class BookNotice extends StatelessWidget {
   final Widget? action;
   final bool loading;
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => SingleChildScrollView(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Bookplate(size: 72, icon: icon),
-              const SizedBox(height: 24),
-              if (loading)
-                BreathingText(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                )
-              else
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              if (message != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  message!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-              if (action != null) ...[const SizedBox(height: 24), action!],
-              const Folio('·'),
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Bookplate(size: 72, icon: icon),
+            const SizedBox(height: 24),
+            if (loading)
+              BreathingText(
+                title,
+                style: Theme.of(context).textTheme.titleLarge,
+              )
+            else
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            if (message != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
-          ),
+            if (action != null) ...[const SizedBox(height: 24), action!],
+            const Folio('·'),
+          ],
         ),
       ),
     ),

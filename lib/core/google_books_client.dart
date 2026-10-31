@@ -1,52 +1,24 @@
 import 'dart:convert';
-import 'dart:io';
-
+import 'package:http/http.dart' as http;
 import 'flags.dart';
 
-/// Client de l'API publique Google Books (sans clé).
-/// Utilisé par la recherche ISBN ; toute défaillance (hors-ligne, timeout,
-/// introuvable) renvoie `null` et le catalogue local prend le relais.
+/// API publique sans clé ; même chemin Android et navigateur, délai borné.
 class GoogleBooksClient {
   GoogleBooksClient._();
-
-  static const String _base = 'https://www.googleapis.com/books/v1/volumes';
-  static const Duration _timeout = Duration(seconds: 5);
-
-  /// Retourne le `volumeInfo` du livre, ou `null`.
-  static Future<Map<String, dynamic>?> fetchByIsbn(String isbn) async {
-    // Jamais de réseau dans les tests : le catalogue local répond seul.
-    if (isRunningUnderFlutterTest) return null;
-    final clean = isbn.replaceAll(RegExp(r'[^0-9Xx]'), '');
-    if (clean.length != 13) return null;
-    HttpClient client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 4);
-    try {
-      final req = await client
-          .getUrl(Uri.parse('$_base?q=isbn:$clean'))
-          .timeout(const Duration(seconds: 4));
-      final res = await req.close().timeout(_timeout);
-      if (res.statusCode != 200) {
-        await res.drain();
-        return null;
-      }
-      final body = await res
-          .transform(const Utf8Decoder())
-          .join()
-          .timeout(_timeout);
-      final json = jsonDecode(body) as Map<String, dynamic>;
-      final items = json['items'] as List?;
-      if (items == null || items.isEmpty) return null;
-      final vol = items.first;
-      if (vol is! Map) return null;
-      final info = vol['volumeInfo'];
-      if (info is! Map) return null;
-      final result = Map<String, dynamic>.from(info);
-      result['isbn'] = clean;
-      return result;
-    } catch (_) {
-      return null;
-    } finally {
-      client.close();
-    }
+  static Future<Map<String,dynamic>?> fetchByIsbn(String isbn)async{
+    if(isRunningUnderFlutterTest)return null;
+    final clean=isbn.replaceAll(RegExp(r'[^0-9Xx]'),'');
+    if(clean.length!=13)return null;
+    final client=http.Client();
+    try{
+      final response=await client.get(Uri.https('www.googleapis.com','/books/v1/volumes',{'q':'isbn:$clean'})).timeout(const Duration(seconds:5));
+      if(response.statusCode!=200)return null;
+      final data=jsonDecode(utf8.decode(response.bodyBytes)) as Map<String,dynamic>;
+      final items=data['items'] as List?;
+      if(items==null||items.isEmpty||items.first is! Map)return null;
+      final info=(items.first as Map)['volumeInfo'];
+      if(info is! Map)return null;
+      return Map<String,dynamic>.from(info)..['isbn']=clean;
+    }catch(_){return null;}finally{client.close();}
   }
 }

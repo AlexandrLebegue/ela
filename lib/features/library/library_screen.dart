@@ -1,323 +1,204 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import '../../core/theme.dart';
+import '../../core/design/book_tile.dart';
 import '../../core/widgets/book_cover.dart';
 import '../../data/fake/demo_books.dart';
 import '../../data/models/book.dart';
 import '../../data/models/library_entry.dart';
 import '../../providers.dart';
 
-/// Écran « Ma Bibliothèque » : Historique (passif, chronologique) +
-/// Pile à Lire (active). Persistance locale, sans compte.
-class LibraryScreen extends ConsumerWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final entries = ref.watch(libraryEntriesProvider).value ??
-        const <LibraryEntry>[];
-    // Chronologique : du plus récent au plus ancien, par section.
-    final history = entries
-        .where((e) => e.section == LibrarySection.history)
-        .toList()
-      ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
-    final toRead = entries
-        .where((e) => e.section == LibrarySection.toRead)
-        .toList()
-      ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
-    final isEmpty = history.isEmpty && toRead.isEmpty;
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: scheme.surface,
-      body: Builder(
-        builder: (context) {
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 8, 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Ma Bibliothèque',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(fontFamily: 'Lora',
-                                    fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Votre étagère : ce que vous avez lu, et ce qui '
-                            'attend.',
-                            style: TextStyle(
-                              color: scheme.onSurfaceVariant,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Profil / déconnexion (lazy registration, étape 6).
-                    IconButton(
-                      icon: const Icon(Icons.person_outline),
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  bool _shelf = false;
+  @override
+  Widget build(BuildContext context) {
+    final entries = ref.watch(libraryEntriesProvider);
+    return BookScaffold(
+      body: SafeArea(
+        bottom: false,
+        child: entries.when(
+          loading: () => const BookNotice(
+            title: 'Ouverture de votre bibliothèque…',
+            loading: true,
+          ),
+          error: (_, __) => BookNotice(
+            title: 'La bibliothèque se fait attendre',
+            action: OutlinedButton(
+              onPressed: () => ref.invalidate(libraryEntriesProvider),
+              child: const Text('Réessayer'),
+            ),
+          ),
+          data: (items) {
+            final history =
+                items.where((e) => e.section == LibrarySection.history).toList()
+                  ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
+            final pal =
+                items.where((e) => e.section == LibrarySection.toRead).toList()
+                  ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: ChapterHeader(
+                    chapter: 'III',
+                    title: 'Ma Bibliothèque',
+                    subtitle: 'Les lectures d’hier. Les envies de demain.',
+                    trailing: IconButton(
                       tooltip: 'Votre espace',
+                      icon: const Icon(Icons.person_outline),
                       onPressed: () => context.push('/compte'),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: isEmpty
-                    ? const _LibraryEmpty()
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                if (items.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: BookNotice(
+                      title: 'Votre étagère attend ses premiers livres.',
+                      message:
+                          'Scannez un code-barres ou ajoutez un livre à votre Pile à Lire.',
+                      action: OutlinedButton.icon(
+                        onPressed: () => context.go('/scanner'),
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: const Text('Scanner un livre'),
+                      ),
+                    ),
+                  )
+                else ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Wrap(
+                        spacing: 8,
                         children: [
-                          if (history.isNotEmpty) ...[
-                            _SectionTitle(
-                              icon: Icons.history,
-                              label: 'Historique',
-                              hint: 'Passif — chronologique, du plus récent',
-                              tag: 'Passif',
-                              count: history.length,
-                            ),
-                            for (final e in history)
-                              _LibraryRow(
-                                isbn: e.isbn,
-                                date: e.addedAt,
-                                section: e.section,
-                                onTap: () => context.go('/livre/${e.isbn}'),
-                              ),
-                          ],
-                          if (toRead.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            _SectionTitle(
-                              icon: Icons.bookmark,
-                              label: 'Pile à Lire',
-                              hint: 'Vos livres en attente, du plus récent',
-                              tag: 'Active',
-                              count: toRead.length,
-                            ),
-                            for (final e in toRead)
-                              _LibraryRow(
-                                isbn: e.isbn,
-                                date: e.addedAt,
-                                section: e.section,
-                                onTap: () => context.go('/livre/${e.isbn}'),
-                              ),
-                          ],
+                          ChoiceChip(
+                            label: const Text('Liste'),
+                            selected: !_shelf,
+                            onSelected: (_) => setState(() => _shelf = false),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Étagère'),
+                            selected: _shelf,
+                            onSelected: (_) => setState(() => _shelf = true),
+                          ),
                         ],
                       ),
-              ),
-            ],
-          );
-        },
+                    ),
+                  ),
+                  for (final section in [
+                    (history, 'Historique', 'Passif'),
+                    (pal, 'Pile à Lire', 'Active'),
+                  ])
+                    if (section.$1.isNotEmpty) ...[
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 12,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                section.$2,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              Chip(label: Text(section.$3)),
+                              Text(
+                                '${section.$1.length}',
+                                style: Theme.of(context).textTheme.labelMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_shelf)
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          sliver: SliverToBoxAdapter(
+                            child: Wrap(
+                              spacing: 16,
+                              runSpacing: 24,
+                              children: [
+                                for (final e in section.$1)
+                                  SizedBox(
+                                    width:
+                                        (MediaQuery.sizeOf(context).width -
+                                            80) /
+                                        3,
+                                    child: _LibraryBook(entry: e, shelf: true),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          sliver: SliverList.builder(
+                            itemCount: section.$1.length,
+                            itemBuilder: (context, i) =>
+                                _LibraryBook(entry: section.$1[i]),
+                          ),
+                        ),
+                    ],
+                  const SliverToBoxAdapter(child: Folio('03')),
+                ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.label,
-    required this.hint,
-    this.tag,
-    this.count,
-  });
-
-  final IconData icon;
-  final String label;
-  final String hint;
-  final String? tag;
-  final int? count;
-
+class _LibraryBook extends ConsumerWidget {
+  const _LibraryBook({required this.entry, this.shelf = false});
+  final LibraryEntry entry;
+  final bool shelf;
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 16, 4, 10),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: scheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: scheme.onSurface,
-            ),
-          ),
-          if (tag != null) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: tag == 'Active'
-                    ? scheme.primaryContainer
-                    : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                tag!,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: tag == 'Active'
-                      ? scheme.onPrimaryContainer
-                      : scheme.onSurfaceVariant,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              hint,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          if (count != null)
-            Text(
-              '$count',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LibraryRow extends StatelessWidget {
-  const _LibraryRow({
-    required this.isbn,
-    required this.date,
-    required this.section,
-    required this.onTap,
-  });
-
-  final String isbn;
-  final DateTime date;
-  final LibrarySection section;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final book = DemoData.byIsbnLookup(isbn) ??
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Book book =
+        ref.watch(bookByIsbnProvider(entry.isbn)).value ??
+        DemoData.byIsbnLookup(entry.isbn) ??
         Book(
-          isbn: isbn,
-          title: 'Livre ${isbn.substring(0, isbn.length > 5 ? 5 : isbn.length)}',
+          isbn: entry.isbn,
+          title: 'Livre ${entry.isbn}',
           author: 'Auteur inconnu',
           genre: 'Autre',
           year: 2000,
           badge: PopularityBadge.trending,
           readersCount: 0,
         );
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              BookCover(book: book, width: 48),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      book.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      book.author,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                _shortDate(date),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+    void open() => context.push('/livre/${entry.isbn}');
+    if (!shelf) {
+      return BookTile(
+        book: book,
+        onTap: open,
+        detail:
+            '${entry.addedAt.day}/${entry.addedAt.month}/${entry.addedAt.year}',
+      );
+    }
+    return InkWell(
+      onTap: open,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BookCover(
+            book: book,
+            width: (MediaQuery.sizeOf(context).width - 80) / 3,
           ),
-        ),
-      ),
-    );
-  }
-
-  static String _shortDate(DateTime d) =>
-      '${d.day}/${d.month}/${d.year}';
-}
-
-class _LibraryEmpty extends StatelessWidget {
-  const _LibraryEmpty();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.auto_stories_outlined,
-                size: 56, color: scheme.outline),
-            const SizedBox(height: 16),
-            Text(
-              'Votre étagère attend ses premiers livres.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Lora',
-                fontSize: 18,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Scannez un code-barres ou ajoutez un livre à votre Pile à Lire.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
-            ),
-          ],
-        ),
+          const SizedBox(height: 8),
+          const Divider(thickness: 3),
+          Text(book.title, style: Theme.of(context).textTheme.titleSmall),
+          Text(book.author, style: Theme.of(context).textTheme.labelSmall),
+        ],
       ),
     );
   }

@@ -4,7 +4,6 @@ import 'package:ela/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -13,7 +12,6 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     // Pas de réseau dans les tests.
-    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
   /// Avance l'horloge factice au-delà de tous les délais fake (≤ 1,5 s)
@@ -43,8 +41,9 @@ void main() {
     });
   }
 
-  testWidgets('Premier lancement : 3 écrans, « Commencer à lire » → shell',
-      (tester) async {
+  testWidgets('Premier lancement : 3 écrans, « Commencer à lire » → shell', (
+    tester,
+  ) async {
     await pumpApp(tester);
 
     // Page 1.
@@ -79,8 +78,9 @@ void main() {
     expect(find.text('Scanner'), findsWidgets);
   });
 
-  testWidgets('« Passer » saute l’onboarding au premier lancement',
-      (tester) async {
+  testWidgets('« Passer » saute l’onboarding au premier lancement', (
+    tester,
+  ) async {
     final scope = await pumpApp(tester);
     expect(find.text('Passer'), findsOneWidget);
 
@@ -91,11 +91,14 @@ void main() {
     expect(find.text('Tendance'), findsWidgets);
     // Mémorisé : la prochaine session passera directement au shell.
     expect(
-        scope.read(sharedPreferencesProvider).getBool('ela.onboarded'), true);
+      scope.read(sharedPreferencesProvider).getBool('ela.onboarded'),
+      true,
+    );
   });
 
-  testWidgets('Deuxième lancement : shell direct (onboarding déjà vu)',
-      (tester) async {
+  testWidgets('Deuxième lancement : shell direct (onboarding déjà vu)', (
+    tester,
+  ) async {
     await pumpApp(tester, seed: {'ela.onboarded': true});
 
     expect(find.byType(OnboardingScreen), findsNothing);

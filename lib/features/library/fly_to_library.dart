@@ -57,8 +57,9 @@ class FlyToLibraryController extends ChangeNotifier {
   Timer? _timer;
 }
 
-final flyToLibraryProvider =
-    ChangeNotifierProvider<FlyToLibraryController>((ref) {
+final flyToLibraryProvider = ChangeNotifierProvider<FlyToLibraryController>((
+  ref,
+) {
   return FlyToLibraryController();
 });
 
@@ -136,7 +137,9 @@ class _FlyToLibrarySheetState extends ConsumerState<FlyToLibrarySheet>
   Widget build(BuildContext context) {
     final req = widget.request;
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final core = isLight ? ElaColors.gold : ElaColors.nightSepia;
+    final core = isLight
+        ? Theme.of(context).colorScheme.secondary
+        : ElaColors.nightSepia;
 
     // Positionnement via Transform (pas de Positioned : dans Flutter 3.35,
     // le Positioned ne peut pas appliquer sa StackParentData dans le
@@ -187,8 +190,9 @@ class _FlyingCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial =
-        book.title.trim().isEmpty ? 'E' : book.title.trim()[0].toUpperCase();
+    final initial = book.title.trim().isEmpty
+        ? 'E'
+        : book.title.trim()[0].toUpperCase();
     final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -211,7 +215,7 @@ class _FlyingCover extends StatelessWidget {
         child: Text(
           initial,
           style: TextStyle(
-            fontFamily: 'Lora',
+            fontFamily: ElaType.titleFamily,
             fontSize: 22,
             color: scheme.onPrimaryContainer,
             fontWeight: FontWeight.w600,

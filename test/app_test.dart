@@ -2,7 +2,6 @@ import 'package:ela/app.dart';
 import 'package:ela/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -11,7 +10,6 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({'ela.onboarded': true});
     // Pas de réseau dans les tests.
-    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
   Future<void> pumpApp(WidgetTester tester) {
@@ -34,8 +32,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('Le socle lance l’app avec la barre de 4 entrées',
-      (tester) async {
+  testWidgets('Le socle lance l’app avec la barre de 4 entrées', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await settleAll(tester);
 
@@ -47,8 +46,9 @@ void main() {
     expect(find.text('Recherche'), findsOneWidget);
   });
 
-  testWidgets('On navigue entre les onglets Scanner et Recherche',
-      (tester) async {
+  testWidgets('On navigue entre les onglets Scanner et Recherche', (
+    tester,
+  ) async {
     await pumpApp(tester);
     await settleAll(tester);
 
