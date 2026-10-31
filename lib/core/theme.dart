@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Palette « cocooning » de Ela.
 abstract final class ElaColors {
@@ -41,7 +40,9 @@ class ElaTheme {
       primary: isLight ? ElaColors.sepia : ElaColors.nightSepia,
       onPrimary: isLight ? Colors.white : ElaColors.night,
       primaryContainer: isLight ? Color(0xFFF3DCC0) : Color(0xFF4A3A22),
-      onPrimaryContainer: isLight ? ElaColors.sepiaDeep : ElaColors.nightSepiaDeep,
+      onPrimaryContainer: isLight
+          ? ElaColors.sepiaDeep
+          : ElaColors.nightSepiaDeep,
       secondary: isLight ? ElaColors.gold : Color(0xFFD9A556),
       // Accessibilité : encre sur or (≥ 5:1) plutôt que blanc (≈ 2,6:1).
       onSecondary: isLight ? ElaColors.ink : Color(0xFF3D2E1F),
@@ -49,18 +50,17 @@ class ElaTheme {
       onSecondaryContainer: isLight ? Color(0xFF6B4E1E) : Color(0xFFEED9AE),
       surface: isLight ? ElaColors.paperSurface : ElaColors.nightSurface,
       onSurface: isLight ? ElaColors.ink : ElaColors.nightInk,
-      surfaceContainerHighest:
-          isLight ? Color(0xFFF1E7D3) : Color(0xFF232C42),
+      surfaceContainerHighest: isLight ? Color(0xFFF1E7D3) : Color(0xFF232C42),
       onSurfaceVariant: isLight ? ElaColors.inkSoft : ElaColors.nightInkSoft,
       outline: isLight ? ElaColors.lineLight : ElaColors.lineNight,
       error: isLight ? ElaColors.error : Color(0xFFE08A6E),
       onError: Colors.white,
     );
 
-    final TextTheme sans = GoogleFonts.nunitoSansTextTheme(
-      (isLight ? ThemeData.light() : ThemeData.dark()).textTheme,
-    );
-    final TextTheme serif = GoogleFonts.loraTextTheme(sans);
+    final TextTheme sans = (isLight ? ThemeData.light() : ThemeData.dark())
+        .textTheme
+        .apply(fontFamily: 'NunitoSans');
+    final TextTheme serif = sans.apply(fontFamily: 'Lora');
     final TextTheme textTheme = serif.copyWith(
       bodySmall: sans.bodySmall,
       bodyMedium: sans.bodyMedium,
@@ -99,10 +99,7 @@ class ElaTheme {
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: scheme.surfaceContainerHighest,
         selectedColor: scheme.primaryContainer,
-        labelStyle: TextStyle(
-          color: scheme.onSurface,
-          fontSize: 13,
-        ),
+        labelStyle: TextStyle(color: scheme.onSurface, fontSize: 13),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(999),
           side: BorderSide(color: scheme.outline.withValues(alpha: 0.7)),
@@ -111,8 +108,10 @@ class ElaTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isLight ? ElaColors.paperCard : ElaColors.nightCard,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: scheme.outline.withValues(alpha: 0.7)),

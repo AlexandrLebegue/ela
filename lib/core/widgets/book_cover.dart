@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/models/book.dart';
+import '../flags.dart';
 
 /// Couverture de livre, avec repli élégant (dégradé sépia + initiale)
 /// si l'image est indisponible ou hors-ligne.
@@ -14,7 +15,7 @@ class BookCover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final url = book.coverUrl;
+    final url = isRunningUnderFlutterTest ? null : book.coverUrl;
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: SizedBox(
@@ -35,8 +36,9 @@ class BookCover extends StatelessWidget {
   }
 
   Widget _placeholder(ColorScheme scheme) {
-    final initial =
-        book.title.trim().isEmpty ? 'E' : book.title.trim()[0].toUpperCase();
+    final initial = book.title.trim().isEmpty
+        ? 'E'
+        : book.title.trim()[0].toUpperCase();
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
