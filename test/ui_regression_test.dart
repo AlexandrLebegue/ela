@@ -1,3 +1,4 @@
+import 'package:ela/core/widgets/rating_stars.dart';
 import 'dart:math' as math;
 import 'package:ela/app.dart';
 import 'package:ela/core/theme.dart';
@@ -206,6 +207,11 @@ void main() {
       find.widgetWithText(TextField, 'Ce livre vous a fait quoi ?'),
       'Un avis paisible qui donne envie de relire ce livre.',
     );
+    final stars = find.byWidgetPredicate(
+      (w) => w is RatingStars && w.onChanged != null,
+    );
+    await t.ensureVisible(stars);
+    await t.tapAt(t.getTopLeft(stars) + const Offset(195, 28));
     await press(t, 'Publier');
     expect(c.read(sharedPreferencesProvider).getInt('ela.stats.reviews'), 1);
     expect(find.text('« Une belle lecture »'), findsOneWidget);

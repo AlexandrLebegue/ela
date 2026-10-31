@@ -85,6 +85,8 @@ void main() {
     await pumpDetail(tester);
     await settleAll(tester);
 
+    await tester.ensureVisible(find.text('Le Web'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Le Web'));
     await settleAll(tester);
 
@@ -100,6 +102,8 @@ void main() {
       await pumpDetail(tester);
       await settleAll(tester);
 
+      await tester.ensureVisible(find.text('La Communauté'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('La Communauté'));
       await settleAll(tester);
 
@@ -122,12 +126,16 @@ void main() {
     await pumpDetail(tester);
     await settleAll(tester);
 
+    await tester.ensureVisible(find.text('Ajouter à la PAL'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Ajouter à la PAL'));
     await settleAll(tester);
 
     expect(find.text('Dans votre PAL'), findsOneWidget);
     expect(find.textContaining('Ajouté à votre Pile à Lire'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Dans votre PAL'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Dans votre PAL'));
     await settleAll(tester);
 
@@ -142,6 +150,8 @@ void main() {
     await pumpDetail(tester);
     await settleAll(tester);
 
+    await tester.ensureVisible(find.text('La Communauté'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('La Communauté'));
     await settleAll(tester);
     await tester.ensureVisible(find.text('Écrire un avis'));

@@ -13,6 +13,8 @@ class Review {
     this.url,
     this.language = 'fr',
     this.likes = 0,
+    this.rating,
+    this.userId,
   });
 
   final String id;
@@ -26,34 +28,40 @@ class Review {
   final String language;
   final DateTime publishedAt;
   final int likes;
+  final double? rating;
+  final String? userId;
 
   factory Review.fromJson(Map<String, dynamic> json) => Review(
-        id: json['id'] as String,
-        isbn: json['isbn'] as String,
-        source: ReviewSource.values.firstWhere((s) => s.name == json['source']),
-        author: json['author'] as String,
-        outlet: json['outlet'] as String?,
-        title: json['title'] as String,
-        text: json['text'] as String,
-        url: json['url'] as String?,
-        language: json['language'] as String? ?? 'fr',
-        publishedAt: DateTime.parse(json['publishedAt'] as String),
-        likes: json['likes'] as int? ?? 0,
-      );
+    id: json['id'] as String,
+    isbn: json['isbn'] as String,
+    source: ReviewSource.values.firstWhere((s) => s.name == json['source']),
+    author: json['author'] as String,
+    outlet: json['outlet'] as String?,
+    title: json['title'] as String,
+    text: json['text'] as String,
+    url: json['url'] as String?,
+    language: json['language'] as String? ?? 'fr',
+    publishedAt: DateTime.parse(json['publishedAt'] as String),
+    likes: json['likes'] as int? ?? 0,
+    rating: (json['rating'] as num?)?.toDouble(),
+    userId: json['userId'] as String?,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'isbn': isbn,
-        'source': source.name,
-        'author': author,
-        'outlet': outlet,
-        'title': title,
-        'text': text,
-        'url': url,
-        'language': language,
-        'publishedAt': publishedAt.toIso8601String(),
-        'likes': likes,
-      };
+    'id': id,
+    'isbn': isbn,
+    'source': source.name,
+    'author': author,
+    'outlet': outlet,
+    'title': title,
+    'text': text,
+    'url': url,
+    'language': language,
+    'publishedAt': publishedAt.toIso8601String(),
+    'likes': likes,
+    'rating': rating,
+    'userId': userId,
+  };
 
   @override
   String toString() => 'Review($id, $source)';

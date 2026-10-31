@@ -7,6 +7,8 @@ abstract interface class ReviewService {
   /// Publie un avis (compte requis en phase 2).
   Future<Review> addCommunityReview(Review review);
 
+  Future<void> deleteCommunityReview(String isbn, String userId);
+
   /// Signalement d'un avis (modération IA en phase 2).
   Future<void> reportReview(String reviewId);
 }

@@ -1,3 +1,4 @@
+import '../ratings/rating_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   bool _shelf = false;
+  bool _sortByRating = false;
   @override
   Widget build(BuildContext context) {
     final entries = ref.watch(libraryEntriesProvider);
@@ -42,6 +44,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             final pal =
                 items.where((e) => e.section == LibrarySection.toRead).toList()
                   ..sort((a, b) => b.addedAt.compareTo(a.addedAt));
+            final ratings = ref.watch(ratingsProvider);
+            final uid = ref.watch(profileProvider).id;
+            double note(String isbn) =>
+                ratings
+                    .where((r) => r.isbn == isbn && r.userId == uid)
+                    .firstOrNull
+                    ?.value ??
+                0;
+            if (_sortByRating) {
+              history.sort((a, b) => note(b.isbn).compareTo(note(a.isbn)));
+              pal.sort((a, b) => note(b.isbn).compareTo(note(a.isbn)));
+            }
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
@@ -79,6 +93,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       child: Wrap(
                         spacing: ElaSize.v8,
                         children: [
+                          ChoiceChip(
+                            label: const Text('Par note'),
+                            selected: _sortByRating,
+                            onSelected: (v) =>
+                                setState(() => _sortByRating = v),
+                          ),
                           ChoiceChip(
                             label: const Text('Liste'),
                             selected: !_shelf,
@@ -192,6 +212,37 @@ class _LibraryBook extends ConsumerWidget {
       return BookTile(
         book: book,
         onTap: open,
+        personalRating: true,
+        trailing: Wrap(
+          spacing: 8,
+          children: [
+            TextButton.icon(
+              onPressed: () async {
+                try {
+                  await ref.read(libraryServiceProvider).addHistory(entry.isbn);
+                  await ref
+                      .read(libraryServiceProvider)
+                      .removeEntry(entry.isbn, LibrarySection.toRead);
+                  if (context.mounted) {
+                    await showRatingSheet(context, entry.isbn);
+                  }
+                } catch (_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Lecture non enregistrée. Réessayez.'),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.done, size: 16),
+              label: Text(
+                entry.section == LibrarySection.toRead ? 'Lu · noter' : 'Noter',
+              ),
+            ),
+          ],
+        ),
         detail:
             '${entry.addedAt.day}/${entry.addedAt.month}/${entry.addedAt.year}',
       );
@@ -209,6 +260,11 @@ class _LibraryBook extends ConsumerWidget {
           const Divider(thickness: ElaSize.v3),
           Text(book.title, style: Theme.of(context).textTheme.titleSmall),
           Text(book.author, style: Theme.of(context).textTheme.labelSmall),
+          BookRatingLabel(isbn: book.isbn, personal: true),
+          TextButton(
+            onPressed: () => showRatingSheet(context, entry.isbn),
+            child: const Text('Noter'),
+          ),
         ],
       ),
     );

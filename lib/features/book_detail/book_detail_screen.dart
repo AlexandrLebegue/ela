@@ -1,3 +1,5 @@
+import '../ratings/rating_widgets.dart';
+import '../../core/widgets/rating_stars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -402,6 +404,7 @@ class _DetailHeader extends StatelessWidget {
               fontStyle: FontStyle.italic,
             ),
           ),
+          RatingSummaryCard(isbn: book.isbn),
           if (book.description != null) ...[
             const SizedBox(height: ElaSize.v14),
             Text(
@@ -1107,6 +1110,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                   ),
               ],
             ),
+            if (r.rating != null) RatingStars(value: r.rating!),
             if (widget.translated) ...[
               const SizedBox(height: ElaSize.v6),
               Row(
@@ -1189,186 +1193,24 @@ class _ReviewCardState extends State<_ReviewCard> {
 
 /// Feuille « Écrire un avis ». Lazy registration : un compte Ela est
 /// requis pour publier (connecté à l'étape 6).
-class _WriteReviewSheet extends ConsumerStatefulWidget {
+class _WriteReviewSheet extends ConsumerWidget {
   const _WriteReviewSheet({required this.isbn});
-
   final String isbn;
-
   @override
-  ConsumerState<_WriteReviewSheet> createState() => _WriteReviewSheetState();
-}
-
-class _WriteReviewSheetState extends ConsumerState<_WriteReviewSheet> {
-  final _titleController = TextEditingController();
-  final _textController = TextEditingController();
-  bool _submitting = false;
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _textController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final isbn = widget.isbn;
-    final title = _titleController.text.trim();
-    final text = _textController.text.trim();
-    if (title.isEmpty || text.isEmpty || _submitting) return;
-    setState(() => _submitting = true);
-    bool allowed;
-    try {
-      allowed = await ref
-          .read(moderationServiceProvider)
-          .isAllowed('$title $text');
-    } catch (_) {
-      if (mounted) {
-        setState(() => _submitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'La vérification est indisponible. Votre texte est conservé.',
+  Widget build(BuildContext context, WidgetRef ref) =>
+      ref.watch(profileProvider).isAnonymous
+      ? SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              24,
+              24,
+              MediaQuery.viewInsetsOf(context).bottom + 24,
             ),
+            child: _AnonymousPrompt(),
           ),
-        );
-      }
-      return;
-    }
-    if (!mounted) return;
-    if (!allowed) {
-      setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Votre avis contient un passage à reformuler.'),
-        ),
-      );
-      return;
-    }
-    final profile = ref.read(profileProvider);
-    final review = Review(
-      id: 'local-${DateTime.now().millisecondsSinceEpoch}',
-      isbn: isbn,
-      source: ReviewSource.community,
-      author: profile.displayNameOrEmail,
-      title: title,
-      text: text,
-      publishedAt: DateTime.now(),
-      likes: 0,
-    );
-    Review saved;
-    try {
-      saved = await ref.read(reviewServiceProvider).addCommunityReview(review);
-    } catch (_) {
-      if (mounted) {
-        setState(() => _submitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Votre avis n’a pas été publié. Le texte est conservé.',
-            ),
-          ),
-        );
-      }
-      return;
-    }
-    if (!mounted) return;
-    setState(() => _submitting = false);
-    ref.invalidate(communityReviewsProvider(isbn));
-    // Bilan de curiosité : compteur d'avis publiés (persistance locale).
-    final prefs = ref.read(sharedPreferencesProvider);
-    prefs.setInt(
-      'ela.stats.reviews',
-      (prefs.getInt('ela.stats.reviews') ?? 0) + 1,
-    );
-    Navigator.of(context).pop();
-    ElaHaptics.heartbeat();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Merci ! « ${saved.title} » rejoint la page du livre.'),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final profile = ref.watch(profileProvider);
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Container(
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(ElaSize.v24),
-            ),
-          ),
-          padding: EdgeInsets.only(
-            left: ElaSize.v20,
-            right: ElaSize.v20,
-            top: ElaSize.v20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: profile.isAnonymous
-              ? _AnonymousPrompt()
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Votre avis',
-                      style: TextStyle(
-                        fontFamily: ElaType.titleFamily,
-                        fontSize: ElaSize.v19,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: ElaSize.v4),
-                    Text(
-                      'Publié sous le nom « ${profile.displayNameOrEmail} ».',
-                      style: TextStyle(
-                        fontSize: ElaSize.v12_5,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: ElaSize.v16),
-                    TextField(
-                      controller: _titleController,
-                      maxLength: 90,
-                      decoration: const InputDecoration(
-                        labelText: 'Un titre pour votre avis',
-                      ),
-                    ),
-                    const SizedBox(height: ElaSize.v12),
-                    TextField(
-                      controller: _textController,
-                      maxLength: 600,
-                      maxLines: 4,
-                      minLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Ce livre vous a fait quoi ?',
-                      ),
-                    ),
-                    const SizedBox(height: ElaSize.v16),
-                    FilledButton.icon(
-                      onPressed: _submitting ? null : _submit,
-                      icon: _submitting
-                          ? const SizedBox(
-                              width: ElaSize.v16,
-                              height: ElaSize.v16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: ElaSize.v2,
-                              ),
-                            )
-                          : const Icon(Icons.send, size: ElaSize.v17),
-                      label: Text(_submitting ? 'Publication…' : 'Publier'),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
+        )
+      : RatingEditor(isbn: isbn);
 }
 
 /// Invite à créer un compte avant de publier (lazy registration).

@@ -1,3 +1,6 @@
+import 'data/fake/fake_rating_service.dart';
+import 'data/services/rating_service.dart';
+import 'data/models/rating.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,7 +83,7 @@ final reviewServiceProvider = Provider<ReviewService>((ref) {
       'Firebase (phase 2) — voir lib/data/firebase/README.md',
     );
   }
-  return FakeReviewService();
+  return FakeReviewService(ref.watch(sharedPreferencesProvider));
 });
 
 final libraryServiceProvider = Provider<LibraryService>((ref) {
@@ -301,4 +304,31 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
   ref.onDispose(router.dispose);
   return router;
+});
+
+final ratingServiceProvider = Provider<RatingService>((ref) {
+  if (kBackend == 'firebase') {
+    throw UnimplementedError('Firebase ratings — voir data/firebase/README.md');
+  }
+  return FakeRatingService(ref.watch(sharedPreferencesProvider));
+});
+final ratingsStreamProvider = StreamProvider<List<BookRating>>(
+  (ref) => ref.watch(ratingServiceProvider).watchRatings(),
+);
+final ratingsProvider = Provider<List<BookRating>>(
+  (ref) =>
+      ref.watch(ratingsStreamProvider).value ??
+      ref.watch(ratingServiceProvider).currentRatings(),
+);
+final ratingSummaryProvider = Provider.family<RatingSummary, String>(
+  (ref, isbn) =>
+      RatingSummary(ref.watch(ratingsProvider).where((r) => r.isbn == isbn)),
+);
+final personalRatingProvider = Provider.family<double?, String>((ref, isbn) {
+  final uid = ref.watch(profileProvider).id;
+  return ref
+      .watch(ratingsProvider)
+      .where((r) => r.isbn == isbn && r.userId == uid)
+      .firstOrNull
+      ?.value;
 });

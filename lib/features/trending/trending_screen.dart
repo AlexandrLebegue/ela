@@ -1,3 +1,4 @@
+import '../ratings/rating_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -255,6 +256,25 @@ class _TrendingScreenState extends ConsumerState<TrendingScreen> {
                       ),
                     ),
                 ],
+                if (books.value?.isNotEmpty ?? false)
+                  SliverToBoxAdapter(
+                    child: _BookShelf(
+                      id: 'rated',
+                      title: 'Les mieux notés',
+                      eyebrow: 'LES VOIX DE LA COMMUNAUTÉ',
+                      books: [...books.value!]
+                        ..sort(
+                          (a, b) => ref
+                              .watch(ratingSummaryProvider(b.isbn))
+                              .average
+                              .compareTo(
+                                ref
+                                    .watch(ratingSummaryProvider(a.isbn))
+                                    .average,
+                              ),
+                        ),
+                    ),
+                  ),
                 SliverToBoxAdapter(
                   child: StaggeredReveal(
                     index: 3,
@@ -328,7 +348,7 @@ class _BookShelf extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scaled = MediaQuery.textScalerOf(context);
-    final height = 192 + scaled.scale(20) * 4 + scaled.scale(14) * 2;
+    final height = 226 + scaled.scale(20) * 4 + scaled.scale(14) * 2;
     return Padding(
       padding: const EdgeInsets.only(bottom: 22),
       child: Column(
@@ -430,6 +450,8 @@ class _BookShelf extends StatelessWidget {
                                 height: 1.15,
                               ),
                             ),
+                            const SizedBox(height: 5),
+                            BookRatingLabel(isbn: book.isbn),
                             const SizedBox(height: 5),
                             Text(
                               book.author,

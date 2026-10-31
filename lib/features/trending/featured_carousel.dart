@@ -1,3 +1,4 @@
+import '../ratings/rating_widgets.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -465,6 +466,8 @@ class _FeaturedCarouselState extends ConsumerState<FeaturedCarousel>
                           color: scheme.onSurfaceVariant,
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      BookRatingLabel(isbn: book.isbn),
                       const SizedBox(height: 9),
                       Text(
                         _hook(book),

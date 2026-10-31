@@ -77,6 +77,7 @@ void main() {
     );
     expect(find.text('Pile à Lire'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('L’Étranger'), 120, scrollable: find.byType(Scrollable).first);
     expect(find.text('L’Étranger'), findsOneWidget);
   });
 
@@ -91,6 +92,8 @@ void main() {
     await tester.pump();
     await settleAll(tester);
 
+    await tester.ensureVisible(find.text('Ajouter à la PAL'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Ajouter à la PAL'));
 
     // Avancer jusqu'au déclenchement de la « réception ».

@@ -1,3 +1,4 @@
+import '../../features/ratings/rating_widgets.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/book.dart';
 import '../widgets/book_cover.dart';
@@ -12,12 +13,14 @@ class BookTile extends StatelessWidget {
     this.rank,
     this.detail,
     this.trailing,
+    this.personalRating = false,
   });
   final Book book;
   final VoidCallback onTap;
   final int? rank;
   final String? detail;
   final Widget? trailing;
+  final bool personalRating;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -60,6 +63,11 @@ class BookTile extends StatelessWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      BookRatingLabel(
+                        isbn: book.isbn,
+                        personal: personalRating,
                       ),
                       if (detail != null) ...[
                         const SizedBox(height: 8),

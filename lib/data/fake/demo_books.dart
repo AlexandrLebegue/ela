@@ -1,3 +1,4 @@
+import '../models/rating.dart';
 import 'dart:math';
 
 import '../models/book.dart';
@@ -312,9 +313,7 @@ abstract final class DemoData {
     ),
   ];
 
-  static final Map<String, Book> byIsbn = {
-    for (final b in books) b.isbn: b,
-  };
+  static final Map<String, Book> byIsbn = {for (final b in books) b.isbn: b};
 
   static Book? byIsbnLookup(String isbn) {
     final clean = isbn.replaceAll(RegExp(r'[^0-9Xx]'), '');
@@ -493,34 +492,52 @@ abstract final class DemoData {
           ? _communityAuthors[rng.nextInt(_communityAuthors.length)]
           : (outlet ?? 'Lecteur');
       final daysAgo = rng.nextInt(700) + 5;
-      result.add(Review(
-        id: '${book.isbn}-${source.name}-$i',
-        isbn: book.isbn,
-        source: source,
-        author: author,
-        outlet: outlet,
-        title: titles[rng.nextInt(titles.length)],
-        text: _fill(templates[rng.nextInt(templates.length)], book),
-        url: source == ReviewSource.press
-            ? 'https://example-press.fr/articles/${book.isbn}/$i'
-            : null,
-        publishedAt: now.subtract(Duration(days: daysAgo)),
-        likes: rng.nextInt(source == ReviewSource.community ? 320 : 90),
-      ));
+      result.add(
+        Review(
+          id: '${book.isbn}-${source.name}-$i',
+          isbn: book.isbn,
+          source: source,
+          author: author,
+          outlet: outlet,
+          title: titles[rng.nextInt(titles.length)],
+          text: _fill(templates[rng.nextInt(templates.length)], book),
+          url: source == ReviewSource.press
+              ? 'https://example-press.fr/articles/${book.isbn}/$i'
+              : null,
+          publishedAt: now.subtract(Duration(days: daysAgo)),
+          rating: source == ReviewSource.community
+              ? [3.5, 4.0, 4.5, 5.0][(i + stableHash(book.isbn)) % 4]
+              : (i.isEven
+                    ? BookRating.fromScale(7 + rng.nextInt(4).toDouble(), 10)
+                    : null),
+          likes: rng.nextInt(source == ReviewSource.community ? 320 : 90),
+        ),
+      );
     }
     return result;
   }
 
   /// 5 avis presse curés.
-  static List<Review> pressFor(Book book) =>
-      _generate(book, ReviewSource.press, 5, _pressOutlets, _pressTitles,
-          _pressTemplates);
+  static List<Review> pressFor(Book book) => _generate(
+    book,
+    ReviewSource.press,
+    5,
+    _pressOutlets,
+    _pressTitles,
+    _pressTemplates,
+  );
 
   /// 15 avis web curés — dont deux en langues étrangères (la traduction
   /// automatique est une fonction Premium, simulée côté UI).
   static List<Review> webFor(Book book) {
     final list = _generate(
-        book, ReviewSource.web, 15, _webOutlets, _webTitles, _webTemplates);
+      book,
+      ReviewSource.web,
+      15,
+      _webOutlets,
+      _webTitles,
+      _webTemplates,
+    );
     final h = stableHash('${book.isbn}lang');
     final i1 = h % 15;
     var i2 = (h >> 4) % 15;
@@ -531,34 +548,43 @@ abstract final class DemoData {
   }
 
   static Review _withLanguage(Review r, String language) => Review(
-        id: r.id,
-        isbn: r.isbn,
-        source: r.source,
-        author: r.author,
-        outlet: r.outlet,
-        title: r.title,
-        text: r.text,
-        url: r.url,
-        language: language,
-        publishedAt: r.publishedAt,
-        likes: r.likes,
-      );
+    id: r.id,
+    isbn: r.isbn,
+    source: r.source,
+    author: r.author,
+    outlet: r.outlet,
+    title: r.title,
+    text: r.text,
+    url: r.url,
+    language: language,
+    publishedAt: r.publishedAt,
+    likes: r.likes,
+    rating: r.rating,
+    userId: r.userId,
+  );
 
   /// Avis communauté (démo, illimités côté fake).
-  static List<Review> communityFor(Book book) =>
-      _generate(book, ReviewSource.community, 24, const [], _communityTitles,
-          _communityTemplates);
+  static List<Review> communityFor(Book book) => _generate(
+    book,
+    ReviewSource.community,
+    24,
+    const [],
+    _communityTitles,
+    _communityTemplates,
+  );
 
   /// Synthèse IA courte (le « super-curateur », pas un résumé robotique).
   static String summaryFor(Book book) => _fill(
-        _summaries[stableHash('${book.isbn}summary') % _summaries.length],
-        book,
-      );
+    _summaries[stableHash('${book.isbn}summary') % _summaries.length],
+    book,
+  );
 
   /// Curation complète, comme le ferait le serveur (cache par ISBN).
   static Future<CurationResult> curate(Book book) async {
-    await fakeDelay(min: const Duration(milliseconds: 900),
-        max: const Duration(milliseconds: 1600));
+    await fakeDelay(
+      min: const Duration(milliseconds: 900),
+      max: const Duration(milliseconds: 1600),
+    );
     return CurationResult(
       isbn: book.isbn,
       summary: summaryFor(book),

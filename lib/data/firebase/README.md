@@ -25,3 +25,15 @@ Rappel du schéma Firestore prévu (voir `docs/ARCHITECTURE.md`) :
 
 Le commutateur de sélection est centralisé dans `lib/providers.dart`
 (flag `--dart-define=BACKEND=fake|firebase`).
+
+## Notation (v2)
+
+`RatingService` sépare les notes des avis : `books/{isbn}/ratings/{uid}`
+contient `value` (0,5…5 par pas de 0,5). Une écriture remplace la note de
+cet utilisateur ; une suppression retire aussi son avis. Les agrégats
+(moyenne, total, histogramme des tranches supérieures 1…5) doivent être
+mis à jour atomiquement côté serveur. Les avis ajoutent `userId` et `rating` ;
+le texte et le titre sont optionnels. Les notes presse/web sont normalisées
+sur 5 seulement si la source fournit une note. Les anciennes données sans
+note restent lisibles. Le fake conserve les notes et avis personnels dans
+SharedPreferences et génère des votes de démonstration déterministes.
