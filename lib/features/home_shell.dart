@@ -21,7 +21,7 @@ class HomeShell extends ConsumerWidget {
     ];
     const icons = [
       Icons.menu_book_outlined,
-      Icons.qr_code_scanner,
+      Icons.document_scanner_outlined,
       Icons.auto_stories_outlined,
       Icons.search,
       Icons.storefront_outlined,
@@ -68,22 +68,18 @@ class HomeShell extends ConsumerWidget {
                                 width: ElaSize.v48,
                                 height: ElaSize.v48,
                                 decoration: BoxDecoration(
-                                  color: i == 1
-                                      ? scheme.primary
-                                      : (i == 2 && receiving
-                                            ? scheme.primaryContainer
-                                            : ElaColors.transparent),
+                                  color: (i == 2 && receiving
+                                      ? scheme.primaryContainer
+                                      : ElaColors.transparent),
                                   borderRadius: BorderRadius.circular(
                                     ElaSize.v4,
                                   ),
                                 ),
                                 child: Icon(
                                   icons[i],
-                                  color: i == 1
-                                      ? scheme.onPrimary
-                                      : (navigationShell.currentIndex == i
-                                            ? scheme.primary
-                                            : scheme.onSurfaceVariant),
+                                  color: (navigationShell.currentIndex == i
+                                      ? scheme.primary
+                                      : scheme.onSurfaceVariant),
                                   size: ElaSize.v23,
                                 ),
                               ),

@@ -1,3 +1,4 @@
+import 'package:ela/features/scanner/scanner_screen.dart';
 import 'package:ela/app.dart';
 import 'package:ela/providers.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('Le scan ne retient que les ISBN EAN-13 et vérifie la clé', () {
+    expect(isBookBarcode('9782070667918'), isTrue);
+    expect(isBookBarcode('9782070667919'), isFalse);
+    expect(isBookBarcode('4006381333931'), isFalse);
+    expect(isBookBarcode('978207066791'), isFalse);
+    expect(isBookBarcode('https://ela.app/livre'), isFalse);
+  });
 
   setUp(() {
     SharedPreferences.setMockInitialValues({'ela.onboarded': true});
@@ -41,6 +49,12 @@ void main() {
     // « Caméra indisponible » s'affiche, avec le secours saisie manuelle.
     expect(find.textContaining('Caméra indisponible'), findsOneWidget);
     expect(find.text('Ou saisissez un ISBN'), findsOneWidget);
+    await tester.tapAt(const Offset(12, 12));
+    await settleAll(tester);
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.text('Saisir un ISBN'));
+    await settleAll(tester);
+    expect(find.byType(TextField), findsOneWidget);
   });
 
   testWidgets('La saisie manuelle d’ISBN ouvre la fiche du livre', (

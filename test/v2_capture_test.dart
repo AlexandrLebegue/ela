@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:ela/app.dart';
+import 'package:ela/features/scanner/scanner_screen.dart';
 import 'package:ela/features/ratings/rating_widgets.dart';
 import 'package:ela/core/widgets/rating_stars.dart';
 import 'package:ela/providers.dart';
@@ -28,7 +29,8 @@ void main() {
       'fiche-notation',
       'widget-notation',
       'tendance-etoiles',
-      'scanner-avant',
+      'scanner-apres',
+      'scanner-manuel',
       'marche-accueil',
       'marche-comparateur',
       'marche-annonce',
@@ -52,6 +54,10 @@ void main() {
         });
         final c = ProviderContainer(
           overrides: [
+            if (scene == 'scanner-apres')
+              scannerAvailabilityProvider.overrideWithValue(
+                ScannerAvailability.preview,
+              ),
             sharedPreferencesProvider.overrideWithValue(
               await SharedPreferences.getInstance(),
             ),

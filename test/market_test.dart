@@ -95,8 +95,21 @@ void main() {
     t,
   ) async {
     String? copied;
-    t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async { if (call.method == 'Clipboard.setData') { copied = (call.arguments as Map)['text'] as String; } return null; });
-    addTearDown(() => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String;
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
     final c = await mount(t, '/livre/9782070667918');
     final open = find.text('Comparer dans le Marché');
     await t.ensureVisible(open);
@@ -104,7 +117,10 @@ void main() {
     await t.tap(open);
     await advance(t);
     expect(find.byType(OfferComparison), findsOneWidget);
-    expect(t.widget<OfferComparison>(find.byType(OfferComparison)).isbn, '9782070667918');
+    expect(
+      t.widget<OfferComparison>(find.byType(OfferComparison)).isbn,
+      '9782070667918',
+    );
     await t.tap(find.text('Neuf'));
     await advance(t);
     expect(find.text('Leboncoin'), findsNothing);
@@ -148,8 +164,9 @@ void main() {
       await t.pump();
       await t.tap(find.text('Publier l’annonce'));
       await advance(t);
-      final listing =
-          (await t.runAsync(() => c.read(marketServiceProvider).watchListings().first))!.first;
+      final listing = (await t.runAsync(
+        () => c.read(marketServiceProvider).watchListings().first,
+      ))!.first;
       expect(listing.price, 4.5);
       c.read(routerProvider).go('/annonce/${listing.id}');
       await advance(t);
